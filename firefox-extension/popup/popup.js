@@ -413,10 +413,10 @@ async function injectContext() {
       action: 'injectContext',
       tabId: tab.id
     });
-    showNotification('✓ Context injected', 'success');
+    showNotification('✓ Context popped', 'success');
   } catch (error) {
-    console.error('Error injecting context:', error);
-    showNotification('✗ Error injecting context', 'error');
+    console.error('Error popping context:', error);
+    showNotification('✗ Error popping context', 'error');
   }
 }
 
@@ -443,7 +443,7 @@ async function handleAutoInjectToggle(event) {
   }
   
   showNotification(
-    enabled ? '✓ Auto-inject enabled' : '✓ Auto-inject disabled',
+    enabled ? '✓ Auto-pop enabled' : '✓ Auto-pop disabled',
     'success'
   );
 }

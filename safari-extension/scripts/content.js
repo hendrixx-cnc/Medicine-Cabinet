@@ -1,7 +1,7 @@
 /**
  * Medicine Cabinet - Content Script
- * Injects AI memory context into supported web pages
- * AUTO-INJECT MODE: Automatically injects context when you visit AI sites
+ * Pops AI memory context into supported web pages
+ * AUTO-POP MODE: Automatically pops context when you visit AI sites
  */
 
 console.log('Medicine Cabinet content script loaded');
@@ -10,7 +10,7 @@ let activeCapsule = null;
 let autoInjectEnabled = true;
 let hasAutoInjected = false;
 
-// Check if we should auto-inject on this site
+// Check if we should auto-pop on this site
 const hostname = window.location.hostname;
 const isAISite = hostname.includes('openai.com') || 
                  hostname.includes('claude.ai') || 
@@ -18,10 +18,10 @@ const isAISite = hostname.includes('openai.com') ||
                  hostname.includes('chat.google.com') ||
                  hostname.includes('bing.com');
 
-// Load auto-inject preference from storage
+// Load auto-pop preference from storage
 chrome.storage.local.get(['autoInjectEnabled'], (result) => {
   autoInjectEnabled = result.autoInjectEnabled !== false; // Default true
-  console.log('Auto-inject preference loaded:', autoInjectEnabled);
+  console.log('Auto-pop preference loaded:', autoInjectEnabled);
 });
 
 // Listen for messages from background script
@@ -32,9 +32,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'activeCapsuleChanged':
       activeCapsule = message.capsule;
       console.log('Active capsule updated:', activeCapsule);
-      // Auto-inject when capsule changes
+      // Auto-pop when capsule changes
       if (autoInjectEnabled && isAISite && !hasAutoInjected) {
-        setTimeout(() => autoInject(), 1000);
+        setTimeout(() => autoPop(), 1000);
       }
       break;
 
@@ -45,7 +45,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case 'toggleAutoInject':
       autoInjectEnabled = message.enabled;
-      console.log('Auto-inject:', autoInjectEnabled ? 'enabled' : 'disabled');
+      console.log('Auto-pop:', autoInjectEnabled ? 'enabled' : 'disabled');
       sendResponse({ success: true });
       break;
   }
@@ -59,22 +59,22 @@ chrome.runtime.sendMessage({ action: 'getActiveCapsule' }, (response) => {
     activeCapsule = response.capsule;
     console.log('Retrieved active capsule:', activeCapsule.metadata.project);
     
-    // Auto-inject if on AI site and have capsule
+    // Auto-pop if on AI site and have capsule
     if (autoInjectEnabled && isAISite && activeCapsule) {
-      setTimeout(() => autoInject(), 2000); // Wait for page to load
+      setTimeout(() => autoPop(), 2000); // Wait for page to load
     }
   }
 });
 
 /**
- * Auto-inject context when page is ready
+ * Auto-pop context when page is ready
  */
-function autoInject() {
+function autoPop() {
   if (!activeCapsule || hasAutoInjected) {
     return;
   }
 
-  console.log('Auto-injecting context...');
+  console.log('Auto-popping context...');
   
   // Wait for input field to be available
   waitForElement(getInputSelector(), (element) => {
