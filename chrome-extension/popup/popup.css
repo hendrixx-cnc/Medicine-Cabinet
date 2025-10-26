@@ -282,6 +282,16 @@ h1 {
   background: #f1f5f9;
 }
 
+.action-btn.danger {
+  background: var(--danger);
+  color: white;
+  border: none;
+}
+
+.action-btn.danger:hover:not(:disabled) {
+  background: #dc2626;
+}
+
 footer {
   text-align: center;
   padding-top: 12px;

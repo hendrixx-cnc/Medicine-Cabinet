@@ -28,6 +28,8 @@ function setupEventListeners() {
   // Action buttons
   document.getElementById('inject-context-btn').addEventListener('click', injectContext);
   document.getElementById('refresh-btn').addEventListener('click', loadMemoryData);
+  document.getElementById('clear-old-btn').addEventListener('click', clearOldMeds);
+  document.getElementById('clear-all-btn').addEventListener('click', clearAllMeds);
 
   // Modal
   document.getElementById('close-modal').addEventListener('click', closeModal);
@@ -495,6 +497,71 @@ function showHelp() {
   `;
 
   modal.classList.remove('hidden');
+}
+
+/**
+ * Clear old medications
+ */
+async function clearOldMeds() {
+  const daysOld = prompt('Clear medications older than how many days?', '7');
+  
+  if (daysOld === null) return; // User cancelled
+  
+  const days = parseInt(daysOld);
+  if (isNaN(days) || days < 0) {
+    showNotification('⚠️ Please enter a valid number of days', 'error');
+    return;
+  }
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'clearOldMeds',
+      daysOld: days
+    });
+
+    if (response.success) {
+      showNotification(
+        `✓ Cleared ${response.removed.total} old medications (${response.removed.capsules} capsules, ${response.removed.tablets} tablets)`,
+        'success'
+      );
+      loadMemoryData();
+    } else {
+      showNotification('✗ Error clearing old medications', 'error');
+    }
+  } catch (error) {
+    console.error('Error clearing old meds:', error);
+    showNotification('✗ Error clearing old medications', 'error');
+  }
+}
+
+/**
+ * Clear all medications
+ */
+async function clearAllMeds() {
+  const confirmed = confirm(
+    '⚠️ WARNING: This will delete ALL capsules, tablets, and sessions.\n\nThis action cannot be undone. Are you sure?'
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'clearAllMeds'
+    });
+
+    if (response.success) {
+      showNotification(
+        `✓ Cleared all medications (${response.removed.capsules} capsules, ${response.removed.tablets} tablets)`,
+        'success'
+      );
+      loadMemoryData();
+    } else {
+      showNotification('✗ Error clearing all medications', 'error');
+    }
+  } catch (error) {
+    console.error('Error clearing all meds:', error);
+    showNotification('✗ Error clearing all medications', 'error');
+  }
 }
 
 // Make functions available globally for inline event handlers

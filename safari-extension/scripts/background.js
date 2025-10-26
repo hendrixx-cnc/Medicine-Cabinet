@@ -71,6 +71,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: true });
       break;
 
+    case 'clearOldMeds':
+      handleClearOldMeds(message.daysOld || 7).then(result => {
+        sendResponse(result);
+      }).catch(error => {
+        sendResponse({ error: error.message });
+      });
+      return true;
+
+    case 'clearAllMeds':
+      handleClearAllMeds().then(result => {
+        sendResponse(result);
+      }).catch(error => {
+        sendResponse({ error: error.message });
+      });
+      return true;
+
     default:
       sendResponse({ error: 'Unknown action' });
   }
@@ -253,6 +269,93 @@ async function broadcastToContentScripts(message) {
       // Tab may not have content script loaded, ignore
     }
   }
+}
+
+/**
+ * Clear old medications (capsules and tablets older than specified days)
+ */
+async function handleClearOldMeds(daysOld = 7) {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+  const cutoffTime = cutoffDate.toISOString();
+
+  const removedCapsules = [];
+  const removedTablets = [];
+  const removedSessions = [];
+
+  // Filter capsules
+  memoryStore.capsules = memoryStore.capsules.filter(capsule => {
+    if (capsule.loadedAt < cutoffTime) {
+      removedCapsules.push(capsule.filename);
+      return false;
+    }
+    return true;
+  });
+
+  // Filter tablets
+  memoryStore.tablets = memoryStore.tablets.filter(tablet => {
+    if (tablet.loadedAt < cutoffTime) {
+      removedTablets.push(tablet.filename);
+      return false;
+    }
+    return true;
+  });
+
+  // Filter sessions
+  memoryStore.sessions = memoryStore.sessions.filter(session => {
+    if (session.loadedAt < cutoffTime) {
+      removedSessions.push(session.filename);
+      return false;
+    }
+    return true;
+  });
+
+  // Reset active capsule if it was removed
+  if (memoryStore.activeCapsule) {
+    const activeCapsuleExists = memoryStore.capsules.some(c => c.id === memoryStore.activeCapsule);
+    if (!activeCapsuleExists) {
+      memoryStore.activeCapsule = memoryStore.capsules.length > 0 ? memoryStore.capsules[0].id : null;
+    }
+  }
+
+  await saveMemory();
+
+  return {
+    success: true,
+    removed: {
+      capsules: removedCapsules.length,
+      tablets: removedTablets.length,
+      sessions: removedSessions.length,
+      total: removedCapsules.length + removedTablets.length
+    },
+    cutoffDate: cutoffTime
+  };
+}
+
+/**
+ * Clear all medications (capsules, tablets, and sessions)
+ */
+async function handleClearAllMeds() {
+  const capsulesCount = memoryStore.capsules.length;
+  const tabletsCount = memoryStore.tablets.length;
+  const sessionsCount = memoryStore.sessions.length;
+
+  memoryStore.capsules = [];
+  memoryStore.tablets = [];
+  memoryStore.sessions = [];
+  memoryStore.activeCapsule = null;
+
+  await saveMemory();
+
+  return {
+    success: true,
+    removed: {
+      capsules: capsulesCount,
+      tablets: tabletsCount,
+      sessions: sessionsCount,
+      total: capsulesCount + tabletsCount
+    }
+  };
 }
 
 /**
