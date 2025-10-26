@@ -111,6 +111,7 @@ class MedicineCabinetState:
     """Global state for loaded capsules and tablets"""
     capsules: List[Dict] = []
     tablets: List[Dict] = []
+    sessions: List[Dict] = []
     current_file: Optional[str] = None
 
 
@@ -138,6 +139,16 @@ class LoadCapsuleCommand(sublime_plugin.WindowCommand):
             
             MedicineCabinetState.capsules.append(capsule)
             MedicineCabinetState.current_file = path
+            
+            # Add to sessions
+            import datetime
+            session_entry = {
+                'filename': capsule['filename'],
+                'type': 'capsule',
+                'loaded_at': datetime.datetime.now().isoformat(),
+                'data': capsule
+            }
+            MedicineCabinetState.sessions.append(session_entry)
             
             sublime.status_message(f"Loaded capsule: {capsule['filename']}")
             self.window.run_command('show_medicine_cabinet_panel')
@@ -170,6 +181,16 @@ class LoadTabletCommand(sublime_plugin.WindowCommand):
             
             MedicineCabinetState.tablets.append(tablet)
             MedicineCabinetState.current_file = path
+            
+            # Add to sessions
+            import datetime
+            session_entry = {
+                'filename': tablet['filename'],
+                'type': 'tablet',
+                'loaded_at': datetime.datetime.now().isoformat(),
+                'data': tablet
+            }
+            MedicineCabinetState.sessions.append(session_entry)
             
             sublime.status_message(f"Loaded tablet: {tablet['filename']}")
             self.window.run_command('show_medicine_cabinet_panel')
@@ -306,6 +327,15 @@ class ShowMedicineCabinetPanelCommand(sublime_plugin.WindowCommand):
         lines.append("=" * 80)
         lines.append("Use Tools > Medicine Cabinet to load files")
         lines.append("=" * 80)
+        
+        # Add Sessions section
+        if MedicineCabinetState.sessions:
+            lines.append("")
+            lines.append(f"All Sessions ({len(MedicineCabinetState.sessions)}):")
+            lines.append("-" * 80)
+            for i, session in enumerate(MedicineCabinetState.sessions):
+                lines.append(f"\n[{i+1}] {session['type'].upper()}: {session['filename']}")
+                lines.append(f"    Loaded: {session['loaded_at']}")
         
         return "\n".join(lines)
 

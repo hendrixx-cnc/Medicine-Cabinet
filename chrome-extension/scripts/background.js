@@ -9,7 +9,8 @@ import { parse } from './parser.js';
 let memoryStore = {
   capsules: [],
   tablets: [],
-  activeCapsule: null
+  activeCapsule: null,
+  sessions: [] // Track all loaded sessions with metadata
 };
 
 // Initialize extension
@@ -31,6 +32,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ tablets: memoryStore.tablets });
       break;
 
+    case 'getSessions':
+      sendResponse({ sessions: memoryStore.sessions });
+      break;
+
     case 'getActiveCapsule':
       sendResponse({ capsule: memoryStore.activeCapsule });
       break;
@@ -39,6 +44,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       setActiveCapsule(message.capsuleId);
       sendResponse({ success: true });
       break;
+
+    case 'viewSession':
+      handleViewSession(message.sessionId).then(result => {
+        sendResponse(result);
+      }).catch(error => {
+        sendResponse({ error: error.message });
+      });
+      return true;
 
     case 'loadFile':
       handleLoadFile(message.file).then(result => {
@@ -70,10 +83,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  */
 async function loadStoredMemory() {
   try {
-    const data = await chrome.storage.local.get(['capsules', 'tablets', 'activeCapsule']);
+    const data = await chrome.storage.local.get(['capsules', 'tablets', 'activeCapsule', 'sessions']);
     memoryStore.capsules = data.capsules || [];
     memoryStore.tablets = data.tablets || [];
     memoryStore.activeCapsule = data.activeCapsule || null;
+    memoryStore.sessions = data.sessions || [];
     console.log('Loaded stored memory:', memoryStore);
   } catch (error) {
     console.error('Error loading stored memory:', error);
@@ -88,7 +102,8 @@ async function saveMemory() {
     await chrome.storage.local.set({
       capsules: memoryStore.capsules,
       tablets: memoryStore.tablets,
-      activeCapsule: memoryStore.activeCapsule
+      activeCapsule: memoryStore.activeCapsule,
+      sessions: memoryStore.sessions
     });
     console.log('Memory saved to storage');
   } catch (error) {
@@ -112,6 +127,18 @@ async function handleLoadFile(fileData) {
       ...parsed
     };
 
+    // Create session entry
+    const sessionEntry = {
+      id: generateId(),
+      type: parsed.type,
+      itemId: memoryItem.id,
+      filename: fileData.name,
+      loadedAt: memoryItem.loadedAt,
+      metadata: parsed.type === 'capsule' 
+        ? { project: parsed.metadata.project, summary: parsed.metadata.summary }
+        : { title: parsed.metadata.title, entries: parsed.entries?.length || 0 }
+    };
+
     if (parsed.type === 'capsule') {
       memoryStore.capsules.push(memoryItem);
       // Auto-set as active if it's the first capsule
@@ -121,6 +148,9 @@ async function handleLoadFile(fileData) {
     } else if (parsed.type === 'tablet') {
       memoryStore.tablets.push(memoryItem);
     }
+
+    // Add to sessions list
+    memoryStore.sessions.push(sessionEntry);
 
     await saveMemory();
     return { success: true, item: memoryItem };
@@ -162,6 +192,33 @@ async function setActiveCapsule(capsuleId) {
       capsule 
     });
   }
+}
+
+/**
+ * View detailed session information
+ */
+async function handleViewSession(sessionId) {
+  const session = memoryStore.sessions.find(s => s.id === sessionId);
+  if (!session) {
+    throw new Error('Session not found');
+  }
+
+  // Find the actual capsule or tablet
+  const item = session.type === 'capsule' 
+    ? memoryStore.capsules.find(c => c.id === session.itemId)
+    : memoryStore.tablets.find(t => t.id === session.itemId);
+
+  if (!item) {
+    throw new Error('Session data not found');
+  }
+
+  return {
+    success: true,
+    session: {
+      ...session,
+      data: item
+    }
+  };
 }
 
 /**

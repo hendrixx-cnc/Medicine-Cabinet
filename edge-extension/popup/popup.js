@@ -4,6 +4,7 @@
 
 let capsules = [];
 let tablets = [];
+let sessions = [];
 let activeCapsuleId = null;
 
 // Initialize
@@ -48,14 +49,17 @@ async function loadMemoryData() {
   try {
     const capsulesResponse = await chrome.runtime.sendMessage({ action: 'getCapsules' });
     const tabletsResponse = await chrome.runtime.sendMessage({ action: 'getTablets' });
+    const sessionsResponse = await chrome.runtime.sendMessage({ action: 'getSessions' });
     const activeResponse = await chrome.runtime.sendMessage({ action: 'getActiveCapsule' });
 
     capsules = capsulesResponse.capsules || [];
     tablets = tabletsResponse.tablets || [];
+    sessions = sessionsResponse.sessions || [];
     activeCapsuleId = activeResponse.capsule;
 
     renderCapsules();
     renderTablets();
+    renderSessions();
     updateInjectButton();
   } catch (error) {
     console.error('Error loading memory data:', error);
@@ -165,6 +169,45 @@ function renderTablets() {
 }
 
 /**
+ * Render sessions list
+ */
+function renderSessions() {
+  const container = document.getElementById('sessions-list');
+  const countEl = document.getElementById('sessions-count');
+  
+  countEl.textContent = sessions.length;
+
+  if (sessions.length === 0) {
+    container.innerHTML = '<p class="empty-state">No sessions loaded yet.</p>';
+    return;
+  }
+
+  container.innerHTML = sessions.map(session => {
+    const typeIcon = session.type === 'capsule' ? '📦' : '📄';
+    const typeBadge = session.type === 'capsule' ? 'capsule' : 'tablet';
+    const loadedDate = new Date(session.loadedAt).toLocaleString();
+    
+    return `
+      <div class="memory-item" data-id="${session.id}" data-type="session">
+        <div class="memory-header">
+          <div class="memory-title">${typeIcon} ${session.filename}</div>
+          <span class="memory-badge ${typeBadge}">${session.type}</span>
+        </div>
+        <div class="memory-info">
+          ${session.metadata.project || session.metadata.title || 'No title'}
+        </div>
+        <div class="memory-meta">
+          <span>🕒 ${loadedDate}</span>
+          <div class="memory-actions">
+            <button class="icon-btn" onclick="viewSessionDetails('${session.id}')" title="View details">👁️</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/**
  * Switch between tabs
  */
 function switchTab(tabName) {
@@ -242,6 +285,44 @@ function viewDetails(id, type) {
 
   modal.classList.remove('hidden');
 }
+
+/**
+ * View session details
+ */
+async function viewSessionDetails(sessionId) {
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'viewSession',
+      sessionId
+    });
+
+    if (response.error) {
+      showNotification('✗ Error loading session', 'error');
+      return;
+    }
+
+    const session = response.session;
+    const modal = document.getElementById('detail-modal');
+    const title = document.getElementById('modal-title');
+    const body = document.getElementById('modal-body');
+
+    title.textContent = `Session: ${session.filename}`;
+
+    if (session.type === 'capsule') {
+      body.innerHTML = renderCapsuleDetails(session.data);
+    } else {
+      body.innerHTML = renderTabletDetails(session.data);
+    }
+
+    modal.classList.remove('hidden');
+  } catch (error) {
+    console.error('Error viewing session:', error);
+    showNotification('✗ Error loading session', 'error');
+  }
+}
+
+// Make function global for inline onclick
+window.viewSessionDetails = viewSessionDetails;
 
 /**
  * Render capsule details

@@ -23,6 +23,7 @@
     <div class="tabs">
       <button class="tab-button active" data-tab="capsules">Capsules</button>
       <button class="tab-button" data-tab="tablets">Tablets</button>
+      <button class="tab-button" data-tab="sessions">Sessions</button>
     </div>
 
     <div class="tab-content active" id="capsules-tab">
@@ -42,6 +43,16 @@
       </div>
       <div id="tablets-list" class="memory-list">
         <p class="empty-state">No tablets loaded. Load a .auratab file to get started.</p>
+      </div>
+    </div>
+
+    <div class="tab-content" id="sessions-tab">
+      <div class="section-header">
+        <h2>All Sessions</h2>
+        <span class="count" id="sessions-count">0</span>
+      </div>
+      <div id="sessions-list" class="memory-list">
+        <p class="empty-state">No sessions loaded yet.</p>
       </div>
     </div>
 

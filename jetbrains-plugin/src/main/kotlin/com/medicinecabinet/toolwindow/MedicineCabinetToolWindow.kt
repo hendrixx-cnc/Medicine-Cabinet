@@ -22,12 +22,25 @@ class MedicineCabinetToolWindow(private val project: Project) {
         arrayOf("Name", "Title", "Created", "Entries"),
         0
     )
+    private val sessionsTableModel = DefaultTableModel(
+        arrayOf("Filename", "Type", "Loaded At", "Info"),
+        0
+    )
     
     private val capsulesTable = JBTable(capsulesTableModel)
     private val tabletsTable = JBTable(tabletsTableModel)
+    private val sessionsTable = JBTable(sessionsTableModel)
     
     private val capsules = mutableListOf<Pair<String, BinaryParser.Capsule>>()
     private val tablets = mutableListOf<Pair<String, BinaryParser.Tablet>>()
+    private val sessions = mutableListOf<SessionEntry>()
+    
+    data class SessionEntry(
+        val filename: String,
+        val type: String,
+        val loadedAt: String,
+        val data: Any
+    )
     
     fun getContent(): JComponent {
         val panel = JPanel(BorderLayout())
@@ -42,6 +55,10 @@ class MedicineCabinetToolWindow(private val project: Project) {
         // Tablets tab
         val tabletsPanel = createTabletsPanel()
         tabbedPane.addTab("Tablets (${tablets.size})", tabletsPanel)
+        
+        // Sessions tab
+        val sessionsPanel = createSessionsPanel()
+        tabbedPane.addTab("Sessions (${sessions.size})", sessionsPanel)
         
         panel.add(tabbedPane, BorderLayout.CENTER)
         
@@ -133,6 +150,20 @@ class MedicineCabinetToolWindow(private val project: Project) {
                     capsule.sections.size
                 ))
                 
+                // Add to sessions
+                sessions.add(SessionEntry(
+                    filename = file.name,
+                    type = "capsule",
+                    loadedAt = java.time.Instant.now().toString(),
+                    data = capsule
+                ))
+                sessionsTableModel.addRow(arrayOf(
+                    file.name,
+                    "Capsule",
+                    java.time.Instant.now().toString(),
+                    "${capsule.sections.size} sections"
+                ))
+                
                 Messages.showInfoMessage(
                     project,
                     "Capsule loaded successfully: ${file.name}",
@@ -166,6 +197,20 @@ class MedicineCabinetToolWindow(private val project: Project) {
                     tablet.metadata["raw"]?.toString()?.take(30) ?: "Unknown",
                     tablet.createdAt.toString(),
                     tablet.entries.size
+                ))
+                
+                // Add to sessions
+                sessions.add(SessionEntry(
+                    filename = file.name,
+                    type = "tablet",
+                    loadedAt = java.time.Instant.now().toString(),
+                    data = tablet
+                ))
+                sessionsTableModel.addRow(arrayOf(
+                    file.name,
+                    "Tablet",
+                    java.time.Instant.now().toString(),
+                    "${tablet.entries.size} entries"
                 ))
                 
                 Messages.showInfoMessage(
@@ -262,6 +307,59 @@ class MedicineCabinetToolWindow(private val project: Project) {
         if (selectedRow >= 0) {
             tablets.removeAt(selectedRow)
             tabletsTableModel.removeRow(selectedRow)
+        }
+    }
+    
+    private fun createSessionsPanel(): JComponent {
+        val panel = JPanel(BorderLayout())
+        
+        sessionsTable.fillsViewportHeight = true
+        val scrollPane = JBScrollPane(sessionsTable)
+        panel.add(scrollPane, BorderLayout.CENTER)
+        
+        val buttonPanel = JPanel()
+        val viewButton = JButton("View Details")
+        viewButton.addActionListener { viewSelectedSession() }
+        
+        val clearButton = JButton("Clear All")
+        clearButton.addActionListener { clearAllSessions() }
+        
+        buttonPanel.add(viewButton)
+        buttonPanel.add(clearButton)
+        
+        panel.add(buttonPanel, BorderLayout.SOUTH)
+        
+        return panel
+    }
+    
+    private fun viewSelectedSession() {
+        val selectedRow = sessionsTable.selectedRow
+        if (selectedRow < 0) {
+            Messages.showWarningDialog(project, "Please select a session first", "No Selection")
+            return
+        }
+        
+        val session = sessions[selectedRow]
+        val details = when (session.type) {
+            "capsule" -> formatCapsuleContext(session.filename, session.data as BinaryParser.Capsule)
+            "tablet" -> formatTabletDetails(session.filename, session.data as BinaryParser.Tablet)
+            else -> "Unknown session type"
+        }
+        
+        Messages.showInfoMessage(project, details, "Session Details: ${session.filename}")
+    }
+    
+    private fun clearAllSessions() {
+        val result = Messages.showYesNoDialog(
+            project,
+            "Clear all loaded sessions?",
+            "Confirm",
+            Messages.getQuestionIcon()
+        )
+        
+        if (result == Messages.YES) {
+            sessions.clear()
+            sessionsTableModel.rowCount = 0
         }
     }
 }
