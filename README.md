@@ -59,7 +59,7 @@ capsule.write("myapp.auractx")
 # Create a Tablet (long-term memory)
 tablet = Tablet(metadata=TabletMetadata(
     title="Auth Bug Fix",
-    description="Fixed SQL injection vulnerability"
+    summary="Fixed SQL injection vulnerability"
 ))
 
 tablet.add_entry(TabletEntry(

@@ -42,7 +42,7 @@ print("\n" + "="*60 + "\n")
 print("Creating a Tablet...")
 tablet_metadata = TabletMetadata(
     title="Authentication Bug Fix",
-    description="Fixed SQL injection vulnerability in login endpoint",
+    summary="Fixed SQL injection vulnerability in login endpoint",
     author="Todd",
     tags=["security", "authentication", "bug-fix"]
 )

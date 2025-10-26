@@ -47,7 +47,7 @@ class AutoSessionTracker:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.metadata = TabletMetadata(
             title=f"Auto-tracked Session {timestamp}",
-            description="Automatically tracked coding session",
+            summary="Automatically tracked coding session",
             author=os.environ.get("USER", "unknown"),
             tags=["auto-session", "tracking"]
         )
@@ -58,16 +58,19 @@ class AutoSessionTracker:
         
         print(f"🔍 Auto-session tracking started: {timestamp}")
     
-    def track(self, file_path: str, notes: str = "", diff: str = ""):
-        """Track a file change.
+    def track(self, file_path: str, diff: str, notes: str = "") -> None:
+        """Track a file change in the current session.
         
         Args:
             file_path: Path to the changed file
-            notes: Notes about the change
-            diff: Optional diff content
+            diff: Description of the changes
+            notes: Optional notes about the change
         """
-        entry = TabletEntry(path=file_path, diff=diff, notes=notes)
-        self.tablet.add_entry(entry)
+        if self.tablet is None:
+            print("⚠️  Auto-session tracker not initialized")
+            return
+            
+        self.tablet.add_entry(path=file_path, diff=diff, notes=notes)
     
     def _save_on_exit(self):
         """Save the session when Python exits."""

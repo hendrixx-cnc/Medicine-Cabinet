@@ -102,7 +102,7 @@ def cmd_tablet_create(args):
     """Create a new tablet."""
     metadata = TabletMetadata(
         title=args.title,
-        description=args.description,
+        summary=args.description,
         author=args.author,
         tags=args.tags or [],
     )

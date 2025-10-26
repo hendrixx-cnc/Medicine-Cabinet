@@ -39,7 +39,7 @@ class AURASessionTracker:
         """
         metadata = TabletMetadata(
             title=title,
-            description=description,
+            summary=description,
             author=author or os.environ.get("USER", "unknown"),
             tags=["session", "tracking"]
         )
@@ -63,8 +63,7 @@ class AURASessionTracker:
             diff: Diff or change description
             notes: Optional notes about the change
         """
-        entry = TabletEntry(path=file_path, diff=diff, notes=notes)
-        tablet.add_entry(entry)
+        tablet.add_entry(path=file_path, diff=diff, notes=notes)
         print(f"Recorded change: {file_path}")
     
     def save_session(self, tablet: Tablet, filename: Optional[str] = None) -> Path:
