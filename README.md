@@ -131,7 +131,7 @@ The Medicine Cabinet provides a universal, portable memory layer for AI assistan
 *   **IDE Extensions:**
     *   **[JetBrains Plugin](jetbrains-plugin/):** Native support for all JetBrains IDEs (IntelliJ IDEA, PyCharm, WebStorm, PhpStorm, GoLand, Rider, CLion, RubyMine, etc.) - Load capsules and tablets directly in the IDE with dedicated tool windows
     *   **[Sublime Text Plugin](sublime-extension/):** Python-based plugin with menu integration, keyboard shortcuts, and output panel for viewing loaded memory
-    *   **VS Code Extension:** Coming soon - will integrate with GitHub Copilot and other AI assistants
+    *   **[VS Code Extension](vscode-extension/):** Native TypeScript extension with sidebar views, health monitoring, and GitHub Copilot integration - Load capsules and tablets with visual status tracking
 
 ### Browser Extensions
 

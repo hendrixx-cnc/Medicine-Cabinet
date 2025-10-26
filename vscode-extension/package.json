@@ -1,0 +1,124 @@
+{
+  "name": "medicine-cabinet",
+  "displayName": "Medicine Cabinet",
+  "description": "AI memory management for GitHub Copilot - Load context capsules and tablets",
+  "version": "0.1.0",
+  "publisher": "hendrixx-cnc",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hendrixx-cnc/Medicine-Cabinet"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other",
+    "Machine Learning"
+  ],
+  "keywords": [
+    "ai",
+    "copilot",
+    "memory",
+    "context",
+    "assistant"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "medicine-cabinet.loadCapsule",
+        "title": "Medicine Cabinet: Load Context Capsule",
+        "icon": "$(file)"
+      },
+      {
+        "command": "medicine-cabinet.loadTablet",
+        "title": "Medicine Cabinet: Load Tablet (Memory)",
+        "icon": "$(bookmark)"
+      },
+      {
+        "command": "medicine-cabinet.refresh",
+        "title": "Medicine Cabinet: Refresh Context",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "medicine-cabinet.clearContext",
+        "title": "Medicine Cabinet: Clear Loaded Context",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "medicine-cabinet.exportSession",
+        "title": "Medicine Cabinet: Export Session to Tablet",
+        "icon": "$(export)"
+      },
+      {
+        "command": "medicine-cabinet.showHealth",
+        "title": "Medicine Cabinet: Check Health Status",
+        "icon": "$(heart)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "medicine-cabinet",
+          "title": "Medicine Cabinet",
+          "icon": "resources/pill.svg"
+        }
+      ]
+    },
+    "views": {
+      "medicine-cabinet": [
+        {
+          "id": "medicine-cabinet.contextView",
+          "name": "Loaded Context"
+        },
+        {
+          "id": "medicine-cabinet.healthView",
+          "name": "Health Status"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Medicine Cabinet",
+      "properties": {
+        "medicine-cabinet.capsulePath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to context capsules directory"
+        },
+        "medicine-cabinet.tabletPath": {
+          "type": "string",
+          "default": "~/.medicine_cabinet/tablets",
+          "description": "Path to tablets directory"
+        },
+        "medicine-cabinet.autoLoad": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically load context on startup"
+        },
+        "medicine-cabinet.maxContextSize": {
+          "type": "number",
+          "default": 75,
+          "description": "Maximum context size in KB (15% of 500KB Copilot window)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^18.x",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.40.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {}
+}
