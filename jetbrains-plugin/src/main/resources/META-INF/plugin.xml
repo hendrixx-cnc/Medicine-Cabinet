@@ -1,0 +1,121 @@
+<idea-plugin>
+    <id>com.medicinecabinet.plugin</id>
+    <name>Medicine Cabinet</name>
+    <vendor email="tjhendrx@icloud.com" url="https://github.com/hendrixx-cnc/Medicine-Cabinet">Todd Hendricks</vendor>
+
+    <description><![CDATA[
+    <h1>Medicine Cabinet - AI Memory for Your IDE</h1>
+    
+    <p>
+    Manage AI agent memory directly in your JetBrains IDE. Load, view, and inject Context Capsules (.auractx) 
+    and Memory Tablets (.auratab) to provide rich context to AI assistants.
+    </p>
+    
+    <h2>Features</h2>
+    <ul>
+        <li><strong>Load Memory Files:</strong> Import .auractx and .auratab files into your IDE</li>
+        <li><strong>Tool Window:</strong> Dedicated panel to view and manage capsules and tablets</li>
+        <li><strong>Quick Actions:</strong> Copy context to clipboard with one click</li>
+        <li><strong>File Icons:</strong> Custom icons for .auractx and .auratab files</li>
+        <li><strong>Context Menu:</strong> Right-click files to load them as memory</li>
+        <li><strong>Notifications:</strong> Visual feedback for all operations</li>
+    </ul>
+    
+    <h2>Usage</h2>
+    <ol>
+        <li>Open the Medicine Cabinet tool window (View → Tool Windows → Medicine Cabinet)</li>
+        <li>Click "Load Capsule" or "Load Tablet" to import files</li>
+        <li>View contents in the tool window</li>
+        <li>Click "Copy Context" to copy formatted context to clipboard</li>
+        <li>Paste into your AI assistant of choice</li>
+    </ol>
+    
+    <h2>Compatible With</h2>
+    <ul>
+        <li>IntelliJ IDEA</li>
+        <li>PyCharm</li>
+        <li>WebStorm</li>
+        <li>PhpStorm</li>
+        <li>GoLand</li>
+        <li>Rider</li>
+        <li>CLion</li>
+        <li>RubyMine</li>
+        <li>All JetBrains IDEs 2023.2+</li>
+    </ul>
+    ]]></description>
+
+    <change-notes><![CDATA[
+    <h3>1.0.0</h3>
+    <ul>
+        <li>Initial release</li>
+        <li>Binary parser for .auractx and .auratab formats</li>
+        <li>Tool window for viewing memory files</li>
+        <li>Context copying to clipboard</li>
+        <li>File type icons and associations</li>
+    </ul>
+    ]]></change-notes>
+
+    <!-- Product and plugin compatibility requirements -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Tool Window -->
+        <toolWindow id="Medicine Cabinet" 
+                    secondary="false" 
+                    icon="/icons/toolWindow.svg" 
+                    anchor="right" 
+                    factoryClass="com.medicinecabinet.toolwindow.MedicineCabinetToolWindowFactory"/>
+        
+        <!-- File Types -->
+        <fileType name="AURACTX File"
+                  implementationClass="com.medicinecabinet.filetype.CapsuleFileType"
+                  fieldName="INSTANCE"
+                  language="TEXT"
+                  extensions="auractx"/>
+        
+        <fileType name="AURATAB File"
+                  implementationClass="com.medicinecabinet.filetype.TabletFileType"
+                  fieldName="INSTANCE"
+                  language="TEXT"
+                  extensions="auratab"/>
+        
+        <!-- File Icons -->
+        <iconProvider implementation="com.medicinecabinet.icons.MedicineCabinetIconProvider"/>
+        
+        <!-- Actions -->
+        <action id="MedicineCabinet.LoadCapsule"
+                class="com.medicinecabinet.actions.LoadCapsuleAction"
+                text="Load as Capsule"
+                description="Load this file as a Medicine Cabinet capsule"
+                icon="/icons/capsule.svg">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="CutCopyPasteGroup"/>
+        </action>
+        
+        <action id="MedicineCabinet.LoadTablet"
+                class="com.medicinecabinet.actions.LoadTabletAction"
+                text="Load as Tablet"
+                description="Load this file as a Medicine Cabinet tablet"
+                icon="/icons/tablet.svg">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="MedicineCabinet.LoadCapsule"/>
+        </action>
+        
+        <action id="MedicineCabinet.CopyContext"
+                class="com.medicinecabinet.actions.CopyContextAction"
+                text="Copy Context to Clipboard"
+                description="Copy the active capsule context to clipboard"
+                icon="/icons/copy.svg">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+    </extensions>
+
+    <actions>
+        <!-- Toolbar Actions -->
+        <group id="MedicineCabinet.ToolbarActions" text="Medicine Cabinet" popup="false">
+            <action id="MedicineCabinet.RefreshAction"
+                    class="com.medicinecabinet.actions.RefreshAction"
+                    text="Refresh"
+                    description="Refresh the medicine cabinet view"
+                    icon="AllIcons.Actions.Refresh"/>
+        </group>
+    </actions>
+</idea-plugin>
