@@ -6,6 +6,10 @@ feature, bug fix, or investigation. Tablets are meant to complement the
 ``.auractx`` capsule format by preserving historical context that can be
 shared across projects, branches, or even different AI assistants.
 
+Tablets store "memories" - contextually important information extracted from
+conversations and work sessions, not every literal message. When exported
+or shared, they are referred to as "tablets" for portability.
+
 The binary layout (big-endian) is intentionally simple:
 
 ```

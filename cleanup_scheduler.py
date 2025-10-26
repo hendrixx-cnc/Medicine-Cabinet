@@ -130,39 +130,37 @@ def check_memory_health():
 def prompt_cleanup():
     """Prompt user to clean up old temporary sessions."""
     print("\n" + "="*70)
-    print("💊 MEDICINE CABINET - WEEKLY MEMORY CLEANUP")
+    print("💊 TIME TO TAKE YOUR MEDS! - Weekly Memory Maintenance")
     print("="*70)
     
     # Check memory health
     health = check_memory_health()
     
     if health:
-        print(f"\n📊 Memory Status:")
+        print(f"\n📊 Cabinet Status:")
         print(f"   Total sessions: {health['total']}")
         print(f"   Temporary sessions: {health['temporary']}")
         print(f"   Old sessions (>7 days): {health['old']}")
         print(f"   Storage used: {health['size_mb']:.2f} MB")
         
-        # Alzheimer's warning
+        # Memory health guidance
         if health['old'] > 20 or health['size_mb'] > 50:
-            print("\n" + "⚠️ "*20)
-            print("🧠 ⚠️  ALZHEIMER'S WARNING - MEMORY GETTING FULL! ⚠️")
-            print("⚠️ "*20)
-            print("\n   Your Medicine Cabinet is cluttered with old memories!")
-            print("   Performance will degrade if you don't clean up regularly.")
-            print("   Toss old meds weekly for best performance! 🗑️💊")
+            print("\n🧠 Your Cabinet is getting full!")
+            print("   💡 Did you know? Regular cleanup helps your AI maintain sharper context.")
+            print("   Just like taking vitamins, clearing old sessions weekly keeps things fresh.")
+            print("   Taking your meds = better AI performance! 🗑️💊")
             print()
         elif health['old'] > 10:
-            print("\n⚠️  Memory getting cluttered - cleanup recommended")
-            print("   Toss old meds weekly for best performance!")
+            print("\n💊 Reminder: Time for your weekly cleanup!")
+            print("   Regular maintenance = sharper AI memory")
         else:
-            print("\n✅ Memory is healthy")
+            print("\n✨ Cabinet is looking good! Keep up the weekly routine.")
     
     temp_sessions = get_temporary_sessions()
     
     if not temp_sessions:
-        print("\n✅ No temporary sessions older than 30 days found.")
-        print("   Your session storage is clean!")
+        print("\n✨ Cabinet is clean! No old sessions to clear.")
+        print("   Keep up the good maintenance routine! 💊")
         save_last_cleanup()
         return
     
@@ -180,13 +178,13 @@ def prompt_cleanup():
         print()
     
     print("Options:")
-    print("  [1] 🗑️  Delete all temporary sessions (RECOMMENDED - prevents Alzheimer's!)")
+    print("  [1] 🗑️  Clear old sessions (keeps your AI sharp!)")
     print("  [2] 🔍 Review each session individually")
-    print("  [3] ⏰ Keep all for now (remind me in 7 days)")
-    print("  [4] 🧹 Delete and don't ask again for 30 days")
+    print("  [3] ⏰ Skip for now (remind me in 7 days)")
+    print("  [4] 🧹 Clear all and take a break (remind me in 30 days)")
     
     if health and (health['old'] > 20 or health['size_mb'] > 50):
-        print("\n  ⚠️  WARNING: Memory critically full! Option 1 highly recommended!")
+        print("\n  💡 Tip: Regular cleanup helps your AI work better - just like taking vitamins!")
     
     try:
         choice = input("\nYour choice (1-4): ").strip()
@@ -197,7 +195,8 @@ def prompt_cleanup():
             for session in temp_sessions:
                 session['path'].unlink()
                 deleted += 1
-            print(f"\n✅ Deleted {deleted} temporary session(s)")
+            print(f"\n✨ Cleared {deleted} old session(s) - Cabinet refreshed!")
+            print("   Your AI will appreciate the extra space. 💊✓")
             save_last_cleanup()
         
         elif choice == '2':
@@ -219,24 +218,24 @@ def prompt_cleanup():
                 if action == 'd':
                     session['path'].unlink()
                     deleted += 1
-                    print("  Deleted ✓")
+                    print("  ✓ Cleared")
                 elif action == 's':
                     # Remove 'temporary' tag and add 'saved'
                     tablet.metadata.tags = [t for t in tablet.metadata.tags if t not in ['temporary', 'auto-captured']]
                     tablet.metadata.tags.append('saved')
                     tablet.write(session['path'])
                     kept += 1
-                    print("  Saved permanently ✓")
+                    print("  ✓ Saved (won't auto-delete)")
                 else:
                     kept += 1
-                    print("  Kept for now")
+                    print("  ✓ Keeping for now")
             
-            print(f"\n✅ Deleted: {deleted}, Kept: {kept}")
+            print(f"\n✨ Done! Cleared: {deleted}, Kept: {kept}")
             save_last_cleanup()
         
         elif choice == '3':
             # Remind in 7 days
-            print("\n⏰ Okay, I'll remind you in 7 days")
+            print("\n⏰ No problem! I'll check back in 7 days.")
             save_last_cleanup()
         
         elif choice == '4':
@@ -254,16 +253,16 @@ def prompt_cleanup():
                     'last_cleanup_human': future_date.strftime('%Y-%m-%d %H:%M:%S')
                 }, f, indent=2)
             
-            print(f"\n✅ Deleted {deleted} temporary session(s)")
-            print("   Won't remind you for 30 days")
+            print(f"\n✨ Cleared {deleted} old session(s) - Cabinet refreshed!")
+            print("   Taking a break - see you in 30 days! 💊")
         
         else:
-            print("\n❌ Invalid choice, skipping cleanup")
+            print("\n❓ No worries, skipping cleanup for now")
     
     except KeyboardInterrupt:
-        print("\n\n❌ Cleanup cancelled")
+        print("\n\n⏸️  Cleanup paused - no problem!")
     except Exception as e:
-        print(f"\n❌ Error during cleanup: {e}")
+        print(f"\n⚠️  Oops, something went wrong: {e}")
     
     print("="*70 + "\n")
 

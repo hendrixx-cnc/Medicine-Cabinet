@@ -150,7 +150,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
 
     case 'captureConversation':
-      handleCaptureConversation(message.messages);
+      handleCaptureConversation(message.memories || message.messages); // Support both memories and messages
       sendResponse({ success: true });
       break;
 
@@ -475,24 +475,24 @@ async function handleClearAllMeds() {
 }
 
 /**
- * Handle conversation capture
+ * Handle conversation capture - receives contextual memories (not raw messages)
  */
-function handleCaptureConversation(messages) {
-  if (!messages || messages.length === 0) {
+function handleCaptureConversation(memories) {
+  if (!memories || memories.length === 0) {
     return;
   }
 
-  console.log(`📝 Capturing ${messages.length} conversation messages`);
+  console.log(`� Capturing ${memories.length} contextual memories (filtered from conversation)`);
 
-  // Send to native host for persistence
+  // Send to native host for persistence as tablet
   if (nativePort) {
     sendToNativeHost({
       action: 'captureConversation',
-      messages: messages,
+      memories: memories,  // Filtered contextual memories
       timestamp: new Date().toISOString()
     });
   } else {
-    console.warn('Native host not available, conversation not persisted');
+    console.warn('Native host not available, memories not persisted to tablet');
   }
 }
 

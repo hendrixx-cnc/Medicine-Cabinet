@@ -211,6 +211,12 @@ def cmd_sessions_list(args):
         for capsule_path in sorted(capsules):
             try:
                 capsule = load_capsule(str(capsule_path))
+                print(f"\n  🗂️  {capsule_path.name}")
+                print(f"     Project: {capsule.metadata.project}")
+                print(f"     Sections: {len(capsule.sections)}")
+                print(f"     Created: {capsule.metadata.created_at.strftime('%Y-%m-%d %H:%M:%S')}")
+            except Exception as e:
+                print(f"\n  ⚠️  {capsule_path.name} (error: {e})")
 
 
 def cmd_sessions_cleanup(args):
@@ -283,19 +289,6 @@ def cmd_sessions_cleanup(args):
         print("\n💡 This was a dry run. Use without --dry-run to actually remove files.")
 
 
-def cmd_sessions_cleanup_old_function(args):
-    """Clean up old auto-captured session files."""
-    from datetime import datetime, timedelta
-                print(f"\n  📦 {capsule_path.name}")
-                print(f"     Project: {capsule.metadata.project}")
-                print(f"     Sections: {len(capsule.sections)}")
-                print(f"     Created: {capsule.metadata.created_at.strftime('%Y-%m-%d %H:%M:%S')}")
-            except Exception as e:
-                print(f"\n  ⚠️  {capsule_path.name} (error: {e})")
-    
-    print("\n" + "=" * 80)
-
-
 def cmd_view_file(args):
     """View detailed contents of a session file."""
     filepath = Path(args.file)
@@ -321,10 +314,10 @@ def _view_tablet_detailed(filepath: Path):
     print("=" * 80)
     print(f"TABLET: {filepath.name}")
     print("=" * 80)
-    print(f"\nTitle:       {tablet.metadata.title}")
-    print(f"Description: {tablet.metadata.description}")
+    print(f"Title:       {tablet.metadata.title}")
+    print(f"Summary:     {tablet.metadata.summary}")
     print(f"Author:      {tablet.metadata.author or 'N/A'}")
-    print(f"Created:     {tablet.created_at.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+    print(f"Created:     {tablet.metadata.created_at.strftime('%Y-%m-%d %H:%M:%S UTC')}")
     
     if tablet.metadata.tags:
         print(f"Tags:        {', '.join(tablet.metadata.tags)}")
@@ -488,14 +481,6 @@ def main():
     view_parser = subparsers.add_parser("view", help="View a capsule or tablet file in detail")
     view_parser.add_argument("file", help="File path to view")
     view_parser.set_defaults(func=cmd_view_file)
-    
-    # cleanup command
-    cleanup_parser = subparsers.add_parser("cleanup", help="Clean up old temporary sessions")
-    cleanup_parser.add_argument("--auto", action="store_true", help="Auto-delete without prompting")
-    cleanup_parser.add_argument("--days", type=int, default=30, help="Delete sessions older than N days (default: 30)")
-    cleanup_parser.set_defaults(func=cmd_cleanup_sessions)
-    
-    args = parser.parse_args()
     
     args = parser.parse_args()
     

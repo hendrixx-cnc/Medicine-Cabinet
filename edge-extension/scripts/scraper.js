@@ -68,7 +68,7 @@ class ConversationScraper {
   }
 
   /**
-   * Scrape current conversation
+   * Scrape current conversation and extract contextual memories
    */
   scrapeConversation() {
     const hostname = window.location.hostname;
@@ -85,12 +85,59 @@ class ConversationScraper {
     // Check if we have new messages
     if (messages.length > this.lastMessageCount) {
       const newMessages = messages.slice(this.lastMessageCount);
-      this.conversationHistory.push(...newMessages);
-      this.lastMessageCount = messages.length;
+      
+      // Filter for contextual memories (not every literal message)
+      const contextualMemories = this.extractContext(newMessages);
+      
+      if (contextualMemories.length > 0) {
+        this.conversationHistory.push(...contextualMemories);
+        this.lastMessageCount = messages.length;
 
-      // Notify background script of new messages
-      this.sendToNativeHost(newMessages);
+        // Notify background script of new contextual memories
+        this.sendToNativeHost(contextualMemories);
+      }
     }
+  }
+
+  /**
+   * Extract contextual memories from raw messages
+   * Only captures what's needed for context, not every literal message
+   */
+  extractContext(messages) {
+    const contextualMemories = [];
+    
+    for (const msg of messages) {
+      const content = msg.content;
+      
+      // Skip short, non-contextual messages
+      if (content.length < 50) continue;
+      
+      // Check if message contains contextual information
+      const hasContext = (
+        // Code blocks
+        content.includes('```') ||
+        // Decisions/plans
+        /\b(decide|plan|implement|design|architecture|approach|solution)\b/i.test(content) ||
+        // Task/objective
+        /\b(task|objective|goal|requirement|need to|should)\b/i.test(content) ||
+        // Technical discussions
+        /\b(function|class|method|API|database|algorithm|pattern)\b/i.test(content) ||
+        // File references
+        /\.(js|py|ts|jsx|tsx|json|md|html|css)\b/i.test(content) ||
+        // Errors/issues
+        /\b(error|issue|bug|problem|fix|debug)\b/i.test(content)
+      );
+      
+      if (hasContext) {
+        contextualMemories.push({
+          ...msg,
+          type: 'contextual_memory',  // Mark as memory, not raw message
+          extracted: new Date().toISOString()
+        });
+      }
+    }
+    
+    return contextualMemories;
   }
 
   /**
@@ -163,21 +210,21 @@ class ConversationScraper {
   }
 
   /**
-   * Send scraped messages to native host
+   * Send contextual memories to native host
    */
-  async sendToNativeHost(messages) {
-    if (messages.length === 0) return;
+  async sendToNativeHost(memories) {
+    if (memories.length === 0) return;
 
     try {
       // Send to background script which will relay to native host
       await chrome.runtime.sendMessage({
         action: 'captureConversation',
-        messages: messages
+        memories: memories  // Renamed from 'messages' to 'memories'
       });
 
-      console.log(`📝 Captured ${messages.length} new messages`);
+      console.log(`� Captured ${memories.length} contextual memories (not literal messages)`);
     } catch (error) {
-      console.error('Error sending to native host:', error);
+      console.error('Error sending memories to native host:', error);
     }
   }
 
