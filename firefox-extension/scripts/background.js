@@ -1,6 +1,10 @@
 /**
  * Medicine Cabinet - Background Service Worker
  * Handles extension lifecycle, native messaging, and data storage
+ * 
+ * READ-ONLY MODE: This extension can only read and display .auractx and .auratab files.
+ * It cannot create, modify, or write binary files to prevent corruption.
+ * Use the Python CLI (medicine-cabinet) or IDE plugins for write operations.
  */
 
 import { parse } from './parser.js';

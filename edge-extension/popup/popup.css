@@ -52,6 +52,17 @@ h1 {
   font-weight: 500;
 }
 
+.read-only-notice {
+  font-size: 11px;
+  color: var(--warning);
+  font-weight: 600;
+  margin-top: 6px;
+  padding: 4px 8px;
+  background: rgba(245, 158, 11, 0.1);
+  border-radius: 4px;
+  display: inline-block;
+}
+
 .file-loader {
   margin-bottom: 16px;
 }

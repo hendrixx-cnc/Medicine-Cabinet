@@ -93,20 +93,20 @@ class AutoSessionTracker:
 _tracker = AutoSessionTracker()
 
 
-def track(file_path: str, notes: str = "", diff: str = ""):
+def track(file_path: str, diff: str = "", notes: str = ""):
     """Track a file change in the auto-session.
     
     Args:
         file_path: Path to the changed file
-        notes: Notes about the change
-        diff: Optional diff content
+        diff: Description of the changes or diff content
+        notes: Optional notes about the change
         
     Example:
         >>> from auto_session_tracker import track
         >>> track("main.py", "Fixed bug in login", "+2, -1 lines")
         >>> track("README.md", "Updated docs")
     """
-    _tracker.track(file_path, notes, diff)
+    _tracker.track(file_path, diff, notes)
 
 
 # Example usage
