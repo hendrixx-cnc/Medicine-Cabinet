@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medicine Cabinet</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>💊 Medicine Cabinet</h1>
+      <p class="subtitle">AI Memory Management</p>
+    </header>
+
+    <section class="file-loader">
+      <label for="file-input" class="file-label">
+        <span>📁 Load Capsule or Tablet</span>
+        <input type="file" id="file-input" accept=".auractx,.auratab" multiple>
+      </label>
+    </section>
+
+    <div class="tabs">
+      <button class="tab-button active" data-tab="capsules">Capsules</button>
+      <button class="tab-button" data-tab="tablets">Tablets</button>
+    </div>
+
+    <div class="tab-content active" id="capsules-tab">
+      <div class="section-header">
+        <h2>Context Capsules</h2>
+        <span class="count" id="capsules-count">0</span>
+      </div>
+      <div id="capsules-list" class="memory-list">
+        <p class="empty-state">No capsules loaded. Load a .auractx file to get started.</p>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tablets-tab">
+      <div class="section-header">
+        <h2>Memory Tablets</h2>
+        <span class="count" id="tablets-count">0</span>
+      </div>
+      <div id="tablets-list" class="memory-list">
+        <p class="empty-state">No tablets loaded. Load a .auratab file to get started.</p>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="inject-context-btn" class="action-btn primary" disabled>
+        💉 Inject Active Context
+      </button>
+      <button id="refresh-btn" class="action-btn secondary">
+        🔄 Refresh
+      </button>
+    </div>
+
+    <footer>
+      <p class="version">v1.0.0 | <a href="#" id="help-link">Help</a></p>
+    </footer>
+  </div>
+
+  <!-- Capsule Detail Modal -->
+  <div id="detail-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title"></h3>
+        <button class="close-btn" id="close-modal">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <!-- Content populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

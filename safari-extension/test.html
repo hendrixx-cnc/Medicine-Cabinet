@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medicine Cabinet Extension - Test Page</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1 {
+      color: #6366f1;
+    }
+    .test-section {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    textarea {
+      width: 100%;
+      min-height: 150px;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 14px;
+    }
+    button {
+      background: #6366f1;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #4f46e5;
+    }
+    .info {
+      background: #dbeafe;
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 4px solid #2563eb;
+      margin: 20px 0;
+    }
+    .step {
+      background: white;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+    .step-number {
+      display: inline-block;
+      background: #6366f1;
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 30px;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>💊 Medicine Cabinet Safari Extension - Test Page</h1>
+  
+  <div class="info">
+    <strong>📋 Testing Instructions:</strong> Use this page to test the extension's context injection feature.
+  </div>
+
+  <div class="step">
+    <span class="step-number">1</span>
+    <strong>Load the extension in Safari</strong>
+    <p>Follow the instructions in README.md to load the extension in Safari Developer mode.</p>
+  </div>
+
+  <div class="step">
+    <span class="step-number">2</span>
+    <strong>Load a capsule file</strong>
+    <p>Click the Medicine Cabinet icon and load a .auractx file. Set it as the active capsule.</p>
+  </div>
+
+  <div class="step">
+    <span class="step-number">3</span>
+    <strong>Test injection</strong>
+    <p>Click the "💉 Inject Active Context" button in the extension popup. The context should appear in the textarea below.</p>
+  </div>
+
+  <div class="test-section">
+    <h3>Test Input Area</h3>
+    <p>The extension should inject context here when you click "Inject Active Context":</p>
+    <textarea id="test-input" placeholder="Context will appear here..."></textarea>
+    <button onclick="clearText()">Clear</button>
+  </div>
+
+  <div class="test-section">
+    <h3>Console Output</h3>
+    <p>Open Safari's Web Inspector (Develop → Show Web Inspector) to see console logs from the extension.</p>
+    <p>You should see:</p>
+    <ul>
+      <li>"Medicine Cabinet content script loaded"</li>
+      <li>"Content script received message" when injecting</li>
+      <li>"Injecting context for capsule: [project name]"</li>
+    </ul>
+  </div>
+
+  <div class="test-section">
+    <h3>Manual Test</h3>
+    <p>You can also test by running this in the console:</p>
+    <pre><code>chrome.runtime.sendMessage({
+  action: 'getCapsules'
+}, (response) => console.log(response));</code></pre>
+  </div>
+
+  <div class="info">
+    <strong>✅ Extension is working if:</strong>
+    <ul>
+      <li>The Medicine Cabinet icon appears in Safari's toolbar</li>
+      <li>Clicking it opens the popup with "Load Capsule or Tablet" button</li>
+      <li>After loading a capsule, it appears in the Capsules tab</li>
+      <li>Clicking "Inject Active Context" populates the textarea above</li>
+    </ul>
+  </div>
+
+  <script>
+    function clearText() {
+      document.getElementById('test-input').value = '';
+    }
+
+    // Log when page is ready
+    console.log('Medicine Cabinet test page loaded');
+    console.log('Extension content script should be active');
+    
+    // Check if extension is loaded
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+      console.log('✓ Chrome extension API available');
+    } else {
+      console.warn('⚠️ Chrome extension API not available - extension may not be loaded');
+    }
+  </script>
+</body>
+</html>
