@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """
 Context Manager for Medicine Cabinet
-Handles automatic context loading, message counting, and tablet updates
+Handles automatic context loading and tablet updates
+
+NOTE: Message counter removed - not needed with new architecture
+- Tablets load ONCE at startup (static long-term memory)
+- Browser sends NEW memories only (no re-sending)
+- Capsule health check handles "take your meds"
 """
 
 import json
@@ -26,11 +31,9 @@ class ContextManager:
                 return json.load(f)
         
         return {
-            "message_count": 0,
             "active_tablet": None,
             "active_capsule": None,
-            "last_load": None,
-            "last_reminder": None
+            "last_load": None
         }
     
     def save_state(self):
@@ -38,34 +41,18 @@ class ContextManager:
         with open(self.state_file, 'w') as f:
             json.dump(self.state, f, indent=2)
     
-    def increment_message_count(self):
-        """Increment message counter."""
-        self.state["message_count"] += 1
-        self.save_state()
-        
-        # Check if we need to remind about meds
-        if self.state["message_count"] % 25 == 0:
-            return True  # Time to take meds!
-        return False
-    
     def load_context(self):
-        """Load Medicine Cabinet context and create/update capsule."""
-        
-        # Find or create active tablet (persistent memory)
-        tablet = self._get_or_create_tablet()
-        
-        # Create fresh capsule for this session
-        capsule = self._create_fresh_capsule()
-        
-        # Update state
+        """
+        Load Medicine Cabinet context.
+        Called ONCE at startup to load tablets.
+        No need to call repeatedly - tablets are static during session.
+        """
         self.state["last_load"] = datetime.now(timezone.utc).isoformat()
-        self.state["message_count"] = 0
         self.save_state()
         
         return {
-            "tablet": tablet,
-            "capsule": capsule,
-            "message_count": self.state["message_count"]
+            "loaded": True,
+            "timestamp": self.state["last_load"]
         }
     
     def _get_or_create_tablet(self):
@@ -111,56 +98,44 @@ class ContextManager:
         
         return capsule
     
-    def update_from_conversation(self, user_message, copilot_response):
-        """Update tablet and capsule from conversation turn."""
-        
-        # Load current context
-        context = self.load_context()
-        tablet = context["tablet"]
-        
-        # Extract if contextually important
-        if self._is_contextual(user_message, copilot_response):
-            tablet.add_entry(
-                path=f"conversation/{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-                diff=f"USER: {user_message}\n\nCOPILOT: {copilot_response[:500]}",
-                notes="Contextual memory from conversation"
-            )
-            
-            # Save updated tablet
-            tablet_path = SESSIONS_DIR / f"persistent_{datetime.now().strftime('%Y%m%d')}.auratab"
-            tablet.write(tablet_path)
-        
-        # Check if time for reminder
-        needs_reminder = self.increment_message_count()
-        
-        return {
-            "updated": True,
-            "needs_reminder": needs_reminder,
-            "message_count": self.state["message_count"]
-        }
+    def update_from_conversation(self, user_msg: str, copilot_msg: str):
+        """
+        Update context from conversation.
+        Browser sends NEW memories only - no counter needed.
+        """
     
     def _is_contextual(self, user_msg, copilot_msg):
-        """Check if conversation turn is contextually important."""
+        """Check if conversation turn is contextually important.
+        VERY selective to prevent bloat - only critical information.
+        """
         
         combined = f"{user_msg} {copilot_msg}".lower()
         
-        # Check for contextual keywords
-        contextual_keywords = [
-            'implement', 'code', 'function', 'class', 'error',
-            'bug', 'fix', 'design', 'architecture', 'plan',
-            'decision', 'approach', 'solution', 'algorithm'
+        # Skip if too short
+        if len(combined) < 150:
+            return False
+        
+        # HIGH-VALUE keywords only (implementation, not discussion)
+        high_value_keywords = [
+            'implemented', 'refactored', 'fixed bug', 'created file',
+            'modified function', 'error:', 'exception:', 'traceback',
+            'decided to', 'architecture', 'data flow'
         ]
         
-        for keyword in contextual_keywords:
+        for keyword in high_value_keywords:
             if keyword in combined:
                 return True
         
-        # Check for code blocks
+        # Code blocks with substantial content
         if '```' in user_msg or '```' in copilot_msg:
-            return True
+            # Only if code block is substantial
+            code_content = combined.split('```')[1] if '```' in combined else ''
+            if len(code_content) > 100:
+                return True
         
-        # Check for file references
-        if any(ext in combined for ext in ['.py', '.js', '.ts', '.json']):
+        # Specific file operations (not just mentions)
+        import re
+        if re.search(r'\b(modified|created|updated|deleted|renamed)\s+[\w\/\.\-]+\.(py|js|ts|json)', combined):
             return True
         
         return False
@@ -188,23 +163,25 @@ if __name__ == "__main__":
     import sys
     
     if len(sys.argv) > 1 and sys.argv[1] == "load":
-        # Load context
+        # Load context at startup
         manager = ContextManager()
         context = manager.load_context()
-        print(f"✅ Context loaded: {context['tablet'].metadata.title}")
-        print(f"📊 Message count: {context['message_count']}")
-    
-    elif len(sys.argv) > 1 and sys.argv[1] == "increment":
-        # Increment message count
-        manager = ContextManager()
-        needs_reminder = manager.increment_message_count()
         
-        if needs_reminder:
-            take_your_meds_reminder()
-        else:
-            print(f"📊 Message count: {manager.state['message_count']}")
+        print("="*70)
+        print("💊 MEDICINE CABINET - Context Loaded")
+        print("="*70)
+        print(f"✅ Loaded at: {context['timestamp']}")
+        print()
+        print("Tablets are now in context (static for this session)")
+        print("Browser will send NEW memories as they happen")
+        print("="*70)
     
     else:
         print("Usage:")
-        print("  python3 context_manager.py load       - Load context")
-        print("  python3 context_manager.py increment  - Increment message counter")
+        print("  python3 context_manager.py load")
+        print()
+        print("NOTE: Message counter removed - not needed anymore!")
+        print("  - Tablets load ONCE at startup")
+        print("  - Browser sends NEW memories only")
+        print("  - Capsule health check handles cleanup")
+

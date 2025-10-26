@@ -101,43 +101,60 @@ class ConversationScraper {
 
   /**
    * Extract contextual memories from raw messages
-   * Only captures what's needed for context, not every literal message
+   * 
+   * STRATEGY: Store generous amounts locally (IDE has space),
+   * but filter aggressively for what gets loaded server-side
+   * 
+   * HARD LIMITS: 8MB persistent storage, 1MB active capsule
+   * (works on any modern browser)
+   * 
+   * Stored locally: Full context for detailed queries
+   * Sent to server: Tiny summaries for context window
    */
   extractContext(messages) {
     const contextualMemories = [];
+    const MAX_PER_CYCLE = 10;  // Max 10 memories per cycle
+    const MAX_ENTRY_SIZE = 1000;  // 1KB per entry max
     
     for (const msg of messages) {
       const content = msg.content;
       
-      // Skip short, non-contextual messages
-      if (content.length < 50) continue;
+      // Store if it has ANY technical value (IDE can handle it)
+      if (content.length < 80) continue;  // Skip only trivial stuff
       
-      // Check if message contains contextual information
-      const hasContext = (
-        // Code blocks
+      const hasTechnicalValue = (
+        // Code (any amount)
         content.includes('```') ||
-        // Decisions/plans
-        /\b(decide|plan|implement|design|architecture|approach|solution)\b/i.test(content) ||
-        // Task/objective
-        /\b(task|objective|goal|requirement|need to|should)\b/i.test(content) ||
-        // Technical discussions
-        /\b(function|class|method|API|database|algorithm|pattern)\b/i.test(content) ||
+        
+        // Decisions or implementations
+        /\b(decided|implemented|created|modified|fixed|refactored)\b/i.test(content) ||
+        
+        // Technical terms
+        /\b(function|class|method|error|bug|API|database)\b/i.test(content) ||
+        
         // File references
-        /\.(js|py|ts|jsx|tsx|json|md|html|css)\b/i.test(content) ||
-        // Errors/issues
-        /\b(error|issue|bug|problem|fix|debug)\b/i.test(content)
+        /\.(js|py|ts|jsx|tsx|json|md|html|css)\b/i.test(content)
       );
       
-      if (hasContext) {
+      if (hasTechnicalValue) {
+        // Truncate to 1KB max per entry to prevent bloat
+        const truncatedContent = content.length > MAX_ENTRY_SIZE 
+          ? content.substring(0, MAX_ENTRY_SIZE) + '...[truncated]'
+          : content;
+        
         contextualMemories.push({
-          ...msg,
-          type: 'contextual_memory',  // Mark as memory, not raw message
-          extracted: new Date().toISOString()
+          role: msg.role,
+          content: truncatedContent,  // Max 1KB per entry
+          summary: content.substring(0, 150) + '...',  // Tiny preview for server
+          type: 'contextual_memory',
+          extracted: new Date().toISOString(),
+          size: truncatedContent.length
         });
       }
     }
     
-    return contextualMemories;
+    // Max 10 memories per cycle
+    return contextualMemories.slice(0, MAX_PER_CYCLE);
   }
 
   /**
@@ -213,6 +230,110 @@ class ConversationScraper {
    * Send contextual memories to native host
    */
   async sendToNativeHost(memories) {
+    if (memories.length === 0) return;
+
+    // Check storage size first
+    const storageCheck = await this.checkStorageSize();
+    
+    if (!storageCheck.ok) {
+      console.error('💊 Medicine Cabinet: Storage full', storageCheck);
+      this.showStorageWarning(storageCheck.message);
+      return;
+    }
+    
+    if (storageCheck.warning) {
+      console.warn('💊 Medicine Cabinet:', storageCheck.message);
+    }
+
+    try {
+      // Send to background script which will relay to native host
+      await chrome.runtime.sendMessage({
+        action: 'captureConversation',
+        memories: memories  // Renamed from 'messages' to 'memories'
+      });
+
+      console.log(`💊 Captured ${memories.length} contextual memories (${storageCheck.size_mb.toFixed(2)}MB / 8MB)`);
+    } catch (error) {
+      console.error('Error sending memories to native host:', error);
+    }
+  }
+
+  /**
+   * Check storage size against 8MB limit
+   */
+  async checkStorageSize() {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      return new Promise((resolve) => {
+        chrome.storage.local.getBytesInUse(null, (bytes) => {
+          const mb = bytes / (1024 * 1024);
+          const MAX_MB = 8; // 8MB hard limit for persistent storage
+          
+          if (mb > MAX_MB) {
+            resolve({
+              ok: false,
+              error: 'STORAGE_FULL',
+              size_mb: mb,
+              limit_mb: MAX_MB,
+              message: `Storage full: ${mb.toFixed(2)}MB / ${MAX_MB}MB. Time to take your meds!`
+            });
+          } else if (mb > 6) {  // 75% threshold
+            resolve({
+              ok: true,
+              warning: 'CLEANUP_RECOMMENDED',
+              size_mb: mb,
+              percent: (mb / MAX_MB * 100).toFixed(0),
+              message: `Storage at ${mb.toFixed(2)}MB (${(mb / MAX_MB * 100).toFixed(0)}%) - cleanup recommended`
+            });
+          } else {
+            resolve({
+              ok: true,
+              size_mb: mb,
+              percent: (mb / MAX_MB * 100).toFixed(0),
+              message: `Storage healthy: ${mb.toFixed(2)}MB (${(mb / MAX_MB * 100).toFixed(0)}%)`
+            });
+          }
+        });
+      });
+    }
+    return { ok: true, size_mb: 0 };
+  }
+
+  /**
+   * Show storage warning to user
+   */
+  showStorageWarning(message) {
+    // Create a notification element
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #ff4444;
+      color: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10000;
+      font-family: system-ui;
+      max-width: 400px;
+    `;
+    notification.innerHTML = `
+      <div style="font-weight: bold; margin-bottom: 5px;">💊 Medicine Cabinet</div>
+      <div>${message}</div>
+      <div style="margin-top: 10px; font-size: 0.9em;">Run: <code>python3 cli.py cleanup</code></div>
+    `;
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+      notification.remove();
+    }, 10000);
+  }
+
+  /**
+   * Send contextual memories to native host
+   */
+  async sendToNativeHost_old(memories) {
     if (memories.length === 0) return;
 
     try {

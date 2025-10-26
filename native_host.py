@@ -7,6 +7,12 @@ Allows extensions to:
 - Update context with new information
 - Capture ChatGPT conversations
 - Sync session state in real-time
+
+STORAGE LIMITS:
+- 8MB persistent tablet storage (works on any modern browser)
+- 1MB active capsule limit
+- Max 100 entries per tablet
+- Max 1KB per entry
 """
 
 import sys
@@ -19,6 +25,15 @@ from datetime import datetime
 
 from tablet import Tablet, TabletEntry
 from context_capsule import ContextCapsule
+from storage_limits import (
+    MAX_PERSISTENT_SIZE_BYTES,
+    MAX_CAPSULE_SIZE_BYTES,
+    MAX_ENTRIES_PER_TABLET,
+    MAX_ENTRY_SIZE_BYTES,
+    check_tablet_size,
+    check_total_storage
+)
+from capsule_health_check import check_capsule_health, should_prompt_cleanup
 
 # Setup logging
 log_file = Path.home() / '.medicine_cabinet' / 'native_host.log'
@@ -40,8 +55,13 @@ class NativeMessagingHost:
         self.sessions_dir.mkdir(exist_ok=True)
         logging.info('Native messaging host started')
         
-        # Check if cleanup is needed (runs every 7 days)
+        # Check tablet cleanup schedule (runs every 7 days)
+        # Tablets are static - only check periodically
         self.check_cleanup_schedule()
+        
+        # Check ACTIVE CAPSULE health (dynamic, needs monitoring)
+        # This is the current session that grows during use
+        self.check_active_capsule_health()
         
         # Cleanup old auto-captured sessions on startup
         self.cleanup_old_sessions()
@@ -214,10 +234,28 @@ class NativeMessagingHost:
             return {'success': False, 'error': str(e)}
     
     def capture_conversation(self, message: Dict[str, Any]) -> Dict[str, Any]:
-        """Capture a ChatGPT conversation turn."""
+        """Capture a ChatGPT conversation turn with storage limit enforcement."""
+        
+        # Check storage limits FIRST
+        storage_check = check_total_storage()
+        if not storage_check['ok']:
+            logging.warning(f"Storage full: {storage_check['total_mb']:.2f}MB / 8MB")
+            return {
+                'success': False,
+                'error': 'STORAGE_FULL',
+                'message': storage_check['message'],
+                'size_mb': storage_check['total_mb'],
+                'limit_mb': 8
+            }
+        
+        # Warn if approaching limit
+        if 'warning' in storage_check:
+            logging.warning(storage_check['message'])
+        
         user_message = message.get('userMessage', '')
         ai_response = message.get('aiResponse', '')
         context = message.get('context', {})
+        memories = message.get('memories', [])  # New: contextual memories from scraper
         
         # Create or update session tablet
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -237,13 +275,58 @@ class NativeMessagingHost:
             else:
                 tablet = Tablet.read(tablet_path)
             
-            # Add conversation turn
-            conversation_text = f"USER: {user_message}\n\nASSISTANT: {ai_response}"
-            tablet.add_entry(
-                path='chatgpt_conversation',
-                diff=conversation_text,
-                notes=json.dumps(context)
-            )
+            # Check tablet size before adding
+            tablet_check = check_tablet_size(tablet_path)
+            if not tablet_check['ok']:
+                logging.warning(f"Tablet too large: {tablet_check['size_mb']:.2f}MB")
+                return {
+                    'success': False,
+                    'error': 'TABLET_TOO_LARGE',
+                    'message': tablet_check['message']
+                }
+            
+            # Check entry count limit (max 100 entries per tablet)
+            if len(tablet.entries) >= MAX_ENTRIES_PER_TABLET:
+                logging.info(f"Tablet full ({len(tablet.entries)} entries), creating new one")
+                # Create new tablet with incremented counter
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                tablet_path = self.sessions_dir / f'conversation_{timestamp}_cont.auratab'
+                from tablet import TabletMetadata
+                metadata = TabletMetadata(
+                    title=f"ChatGPT Session {datetime.now().strftime('%Y-%m-%d %H:%M')} (continued)",
+                    summary="Auto-captured ChatGPT conversation (continuation)",
+                    author=context.get('user', 'unknown'),
+                    tags=['chatgpt', 'conversation', 'auto-captured', 'temporary']
+                )
+                tablet = Tablet(metadata=metadata)
+            
+            # Add contextual memories (not full conversation)
+            if memories:
+                for memory in memories[:10]:  # Max 10 per call
+                    content = memory.get('content', '')
+                    
+                    # Enforce 1KB per entry limit
+                    if len(content) > MAX_ENTRY_SIZE_BYTES:
+                        content = content[:MAX_ENTRY_SIZE_BYTES] + '...[truncated]'
+                    
+                    tablet.add_entry(
+                        path='contextual_memory',
+                        diff=content,
+                        notes=f"Role: {memory.get('role', 'unknown')}, Type: {memory.get('type', 'memory')}"
+                    )
+            else:
+                # Fallback to full conversation (legacy)
+                conversation_text = f"USER: {user_message}\n\nASSISTANT: {ai_response}"
+                
+                # Enforce 1KB limit
+                if len(conversation_text) > MAX_ENTRY_SIZE_BYTES:
+                    conversation_text = conversation_text[:MAX_ENTRY_SIZE_BYTES] + '...[truncated]'
+                
+                tablet.add_entry(
+                    path='chatgpt_conversation',
+                    diff=conversation_text,
+                    notes=json.dumps(context)
+                )
             
             # Save
             tablet.write(tablet_path)
@@ -364,8 +447,56 @@ class NativeMessagingHost:
         except Exception as e:
             return {'success': False, 'error': str(e)}
     
+    def check_active_capsule_health(self):
+        """
+        Check if ACTIVE CAPSULE needs cleanup and log warning.
+        
+        This is the CURRENT SESSION only - not tablets!
+        Tablets are loaded once at startup (static).
+        Capsule grows during the session (dynamic).
+        
+        When near limits, I need to "visit the doctor":
+        - Physical (refresh) → I get a quick checkup, auto-saved
+        - Operation (export) → You perform surgery on me via CLI
+        - All my memories preserved in tablets
+        """
+        
+        # Find active capsule
+        capsules = list(Path(".").glob("*.auractx"))
+        if not capsules:
+            logging.info("No active capsule - starting fresh")
+            return
+        
+        capsule_path = capsules[0]
+        
+        if should_prompt_cleanup(capsule_path):
+            health = check_capsule_health(capsule_path)
+            logging.warning("="*70)
+            logging.warning("💊 ACTIVE CAPSULE NEEDS ATTENTION")
+            logging.warning(f"Status: {health['status']}")
+            logging.warning(f"Size: {health['size_kb']:.1f}KB / 1024KB ({health['size_pct']:.0f}%)")
+            logging.warning(f"Entries: {health['entries']}")
+            logging.warning(f"Age: {health['age_hours']:.1f} hours")
+            logging.warning(f"Redundancy: {health['redundancy_pct']:.0f}%")
+            
+            if health['issues']:
+                logging.warning("Issues:")
+                for issue in health['issues']:
+                    logging.warning(f"  - {issue['message']}")
+            
+            logging.warning("")
+            logging.warning(f"{health['recommendation']}")
+            logging.warning("="*70)
+        else:
+            health = check_capsule_health(capsule_path)
+            logging.info(f"Active capsule healthy: {health['size_kb']:.1f}KB, {health['entries']} entries, {health['age_hours']:.1f}h old")
+    
     def check_cleanup_schedule(self):
-        """Check if it's time to prompt for cleanup (every 7 days)."""
+        """
+        Check if it's time to prompt for TABLET cleanup (every 7 days).
+        
+        Tablets are static - only check periodically, not during session.
+        """
         try:
             import subprocess
             # Run cleanup scheduler in background (will only prompt if needed)
