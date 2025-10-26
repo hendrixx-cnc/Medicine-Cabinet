@@ -45,11 +45,12 @@ class AutoSessionTracker:
         
         # Create tablet
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        month_key = datetime.now().strftime("%Y%m")
         self.metadata = TabletMetadata(
             title=f"Auto-tracked Session {timestamp}",
             summary="Automatically tracked coding session",
             author=os.environ.get("USER", "unknown"),
-            tags=["auto-session", "tracking"]
+            tags=["auto-session", "tracking", "temporary", f"month-{month_key}"]
         )
         self.tablet = Tablet(metadata=self.metadata)
         

@@ -30,7 +30,9 @@
         "https://stackoverflow.com/*",
         "https://chat.openai.com/*",
         "https://claude.ai/*",
-        "https://gemini.google.com/*"
+        "https://gemini.google.com/*",
+        "https://copilot.microsoft.com/*",
+        "https://poe.com/*"
       ],
       "js": ["scripts/content.js"],
       "run_at": "document_idle"
@@ -46,11 +48,13 @@
     "https://stackoverflow.com/*",
     "https://chat.openai.com/*",
     "https://claude.ai/*",
-    "https://gemini.google.com/*"
+    "https://gemini.google.com/*",
+    "https://copilot.microsoft.com/*",
+    "https://poe.com/*"
   ],
   "web_accessible_resources": [
     {
-      "resources": ["scripts/parser.js"],
+      "resources": ["scripts/parser.js", "scripts/scraper.js"],
       "matches": ["<all_urls>"]
     }
   ]

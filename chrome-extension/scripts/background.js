@@ -2,9 +2,8 @@
  * Medicine Cabinet - Background Service Worker
  * Handles extension lifecycle, native messaging, and data storage
  * 
- * READ-ONLY MODE: This extension can only read and display .auractx and .auratab files.
- * It cannot create, modify, or write binary files to prevent corruption.
- * Use the Python CLI (medicine-cabinet) or IDE plugins for write operations.
+ * NATIVE MESSAGING: Connects to Python backend for bidirectional sync
+ * Browser can read files, Python backend handles writes
  */
 
 import { parse } from './parser.js';
@@ -17,11 +16,69 @@ let memoryStore = {
   sessions: [] // Track all loaded sessions with metadata
 };
 
+// Native messaging port
+let nativePort = null;
+
 // Initialize extension
 chrome.runtime.onInstalled.addListener(() => {
   console.log('Medicine Cabinet extension installed');
   loadStoredMemory();
+  connectNativeHost();
 });
+
+/**
+ * Connect to native messaging host
+ */
+function connectNativeHost() {
+  try {
+    nativePort = chrome.runtime.connectNative('com.medicinecabinet.host');
+    
+    nativePort.onMessage.addListener((message) => {
+      console.log('Received from native host:', message);
+      handleNativeMessage(message);
+    });
+    
+    nativePort.onDisconnect.addListener(() => {
+      console.log('Native host disconnected:', chrome.runtime.lastError);
+      nativePort = null;
+      
+      // Try to reconnect after 5 seconds
+      setTimeout(connectNativeHost, 5000);
+    });
+    
+    console.log('✅ Connected to native messaging host');
+  } catch (error) {
+    console.warn('Native messaging host not available:', error);
+    // Extension will work in read-only mode without native host
+  }
+}
+
+/**
+ * Send message to native host
+ */
+function sendToNativeHost(message) {
+  if (nativePort) {
+    nativePort.postMessage(message);
+    return true;
+  } else {
+    console.warn('Native host not connected');
+    return false;
+  }
+}
+
+/**
+ * Handle messages from native host
+ */
+function handleNativeMessage(message) {
+  // Handle responses from Python backend
+  if (message.action === 'capsuleUpdated') {
+    // Reload the updated capsule
+    // TODO: Implement hot-reload
+    console.log('Capsule updated by native host');
+  } else if (message.action === 'tabletUpdated') {
+    console.log('Tablet updated by native host');
+  }
+}
 
 // Listen for messages from popup and content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -92,6 +149,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
       return true;
 
+    case 'captureConversation':
+      handleCaptureConversation(message.messages);
+      sendResponse({ success: true });
+      break;
+
     default:
       sendResponse({ error: 'Unknown action' });
   }
@@ -126,10 +188,59 @@ async function saveMemory() {
       activeCapsule: memoryStore.activeCapsule,
       sessions: memoryStore.sessions
     });
+    
+    // Check storage usage and warn if getting full
+    await checkStorageUsage();
+    
     console.log('Memory saved to storage');
   } catch (error) {
     console.error('Error saving memory:', error);
+    
+    // Check if quota exceeded
+    if (error.message && error.message.includes('QUOTA_BYTES')) {
+      console.error('⚠️  Storage quota exceeded! Please clear old meds.');
+      // Could notify user here
+    }
   }
+}
+
+/**
+ * Check chrome.storage usage and warn if getting full
+ */
+async function checkStorageUsage() {
+  try {
+    const usage = await chrome.storage.local.getBytesInUse();
+    const QUOTA = chrome.storage.local.QUOTA_BYTES || 10485760; // 10MB default
+    const percent = Math.round((usage / QUOTA) * 100);
+    
+    console.log(`Storage: ${formatBytes(usage)} / ${formatBytes(QUOTA)} (${percent}%)`);
+    
+    // Warn at 70% full
+    if (percent >= 70 && percent < 90) {
+      console.warn(`💊 Storage is ${percent}% full - Consider clearing old meds`);
+      console.warn(`   Run: medicine-cabinet cleanup`);
+    }
+    // Critical warning at 90%
+    else if (percent >= 90) {
+      console.error(`⚠️  STORAGE CRITICAL: ${percent}% full`);
+      console.error(`   Old meds need to be tossed! Browser memory getting full.`);
+      console.error(`   Clear old sessions to prevent Alzheimer's (memory loss)`);
+    }
+  } catch (error) {
+    // Some browsers don't support getBytesInUse
+    console.log('Storage usage tracking not available');
+  }
+}
+
+/**
+ * Format bytes to human readable
+ */
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 }
 
 /**
@@ -361,6 +472,28 @@ async function handleClearAllMeds() {
       total: capsulesCount + tabletsCount
     }
   };
+}
+
+/**
+ * Handle conversation capture
+ */
+function handleCaptureConversation(messages) {
+  if (!messages || messages.length === 0) {
+    return;
+  }
+
+  console.log(`📝 Capturing ${messages.length} conversation messages`);
+
+  // Send to native host for persistence
+  if (nativePort) {
+    sendToNativeHost({
+      action: 'captureConversation',
+      messages: messages,
+      timestamp: new Date().toISOString()
+    });
+  } else {
+    console.warn('Native host not available, conversation not persisted');
+  }
 }
 
 /**

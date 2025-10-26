@@ -1,0 +1,9 @@
+{
+  "name": "com.medicinecabinet.host",
+  "description": "Medicine Cabinet Native Messaging Host",
+  "path": "/usr/local/bin/medicine-cabinet-host",
+  "type": "stdio",
+  "allowed_extensions": [
+    "EXTENSION_ID_HERE@medicinecabinet"
+  ]
+}

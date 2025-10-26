@@ -194,10 +194,13 @@ def cmd_sessions_list(args):
         for tablet_path in sorted(tablets):
             try:
                 tablet = load_tablet(str(tablet_path))
-                print(f"\n  📄 {tablet_path.name}")
+                status = " [SAVED]" if "saved" in tablet.metadata.tags else " [AUTO]" if "temporary" in tablet.metadata.tags or "auto-captured" in tablet.metadata.tags else ""
+                print(f"\n  📄 {tablet_path.name}{status}")
                 print(f"     Title: {tablet.metadata.title}")
                 print(f"     Entries: {len(tablet.entries)}")
-                print(f"     Created: {tablet.created_at.strftime('%Y-%m-%d %H:%M:%S')}")
+                print(f"     Created: {tablet.metadata.created_at.strftime('%Y-%m-%d %H:%M:%S')}")
+                if tablet.metadata.tags:
+                    print(f"     Tags: {', '.join(tablet.metadata.tags)}")
             except Exception as e:
                 print(f"\n  ⚠️  {tablet_path.name} (error: {e})")
     
@@ -208,6 +211,81 @@ def cmd_sessions_list(args):
         for capsule_path in sorted(capsules):
             try:
                 capsule = load_capsule(str(capsule_path))
+
+
+def cmd_sessions_cleanup(args):
+    """Clean up old auto-captured session files."""
+    from datetime import timedelta
+    
+    sessions_dir = Path(args.dir)
+    days_old = args.days
+    
+    if not sessions_dir.exists():
+        print(f"Directory not found: {sessions_dir}")
+        sys.exit(1)
+    
+    cutoff_date = datetime.now() - timedelta(days=days_old)
+    removed = []
+    preserved = []
+    
+    print(f"🧹 Cleaning up sessions older than {days_old} days...")
+    print(f"   Cutoff date: {cutoff_date.strftime('%Y-%m-%d')}")
+    print("=" * 80)
+    
+    for tablet_path in sessions_dir.glob("*.auratab"):
+        try:
+            tablet = load_tablet(str(tablet_path))
+            
+            # Skip if explicitly saved
+            if "saved" in tablet.metadata.tags:
+                preserved.append((tablet_path.name, "explicitly saved"))
+                continue
+            
+            # Check if auto-captured
+            is_auto = ("auto-captured" in tablet.metadata.tags or 
+                      "temporary" in tablet.metadata.tags or
+                      tablet_path.name.startswith("auto_"))
+            
+            if not is_auto:
+                preserved.append((tablet_path.name, "not auto-captured"))
+                continue
+            
+            # Check age
+            if tablet.metadata.created_at < cutoff_date:
+                if args.dry_run:
+                    removed.append((tablet_path.name, "would remove"))
+                else:
+                    tablet_path.unlink()
+                    removed.append((tablet_path.name, "removed"))
+            else:
+                preserved.append((tablet_path.name, "too recent"))
+        
+        except Exception as e:
+            print(f"⚠️  Error processing {tablet_path.name}: {e}")
+    
+    # Print results
+    if removed:
+        print(f"\n{'Would remove' if args.dry_run else 'Removed'} ({len(removed)}):")
+        for name, reason in removed:
+            print(f"  🗑️  {name} - {reason}")
+    
+    if preserved:
+        print(f"\nPreserved ({len(preserved)}):")
+        for name, reason in preserved[:10]:  # Show first 10
+            print(f"  ✅ {name} - {reason}")
+        if len(preserved) > 10:
+            print(f"  ... and {len(preserved) - 10} more")
+    
+    print("\n" + "=" * 80)
+    print(f"✅ Cleanup complete: {len(removed)} removed, {len(preserved)} preserved")
+    
+    if args.dry_run:
+        print("\n💡 This was a dry run. Use without --dry-run to actually remove files.")
+
+
+def cmd_sessions_cleanup_old_function(args):
+    """Clean up old auto-captured session files."""
+    from datetime import datetime, timedelta
                 print(f"\n  📦 {capsule_path.name}")
                 print(f"     Project: {capsule.metadata.project}")
                 print(f"     Sections: {len(capsule.sections)}")
@@ -399,10 +477,25 @@ def main():
     sessions_parser.add_argument("--dir", default="./sessions", help="Sessions directory (default: ./sessions)")
     sessions_parser.set_defaults(func=cmd_sessions_list)
     
+    # Cleanup command
+    cleanup_parser = subparsers.add_parser("cleanup", help="Clean up old auto-captured sessions")
+    cleanup_parser.add_argument("--dir", default="./sessions", help="Sessions directory (default: ./sessions)")
+    cleanup_parser.add_argument("--days", type=int, default=30, help="Remove sessions older than N days (default: 30)")
+    cleanup_parser.add_argument("--dry-run", action="store_true", help="Show what would be removed without actually deleting")
+    cleanup_parser.set_defaults(func=cmd_sessions_cleanup)
+    
     # View command
-    view_parser = subparsers.add_parser("view", help="View session file details")
-    view_parser.add_argument("file", help="Session file path (.auratab or .auractx)")
+    view_parser = subparsers.add_parser("view", help="View a capsule or tablet file in detail")
+    view_parser.add_argument("file", help="File path to view")
     view_parser.set_defaults(func=cmd_view_file)
+    
+    # cleanup command
+    cleanup_parser = subparsers.add_parser("cleanup", help="Clean up old temporary sessions")
+    cleanup_parser.add_argument("--auto", action="store_true", help="Auto-delete without prompting")
+    cleanup_parser.add_argument("--days", type=int, default=30, help="Delete sessions older than N days (default: 30)")
+    cleanup_parser.set_defaults(func=cmd_cleanup_sessions)
+    
+    args = parser.parse_args()
     
     args = parser.parse_args()
     

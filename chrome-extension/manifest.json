@@ -40,7 +40,8 @@
   ],
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "nativeMessaging"
   ],
   "host_permissions": [
     "https://github.com/*",
@@ -53,7 +54,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["scripts/parser.js"],
+      "resources": ["scripts/parser.js", "scripts/scraper.js"],
       "matches": ["<all_urls>"]
     }
   ]

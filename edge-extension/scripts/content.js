@@ -2,6 +2,7 @@
  * Medicine Cabinet - Content Script
  * Pops AI memory context into supported web pages
  * AUTO-POP MODE: Automatically pops context when you visit AI sites
+ * CONVERSATION CAPTURE: Scrapes and persists chat conversations
  */
 
 console.log('Medicine Cabinet content script loaded');
@@ -9,6 +10,7 @@ console.log('Medicine Cabinet content script loaded');
 let activeCapsule = null;
 let autoInjectEnabled = true;
 let hasAutoInjected = false;
+let conversationScraper = null;
 
 // Check if we should auto-pop on this site
 const hostname = window.location.hostname;
@@ -19,10 +21,35 @@ const isAISite = hostname.includes('openai.com') ||
                  hostname.includes('bing.com');
 
 // Load auto-pop preference from storage
-chrome.storage.local.get(['autoInjectEnabled'], (result) => {
+chrome.storage.local.get(['autoInjectEnabled', 'captureConversations'], (result) => {
   autoInjectEnabled = result.autoInjectEnabled !== false; // Default true
+  const captureEnabled = result.captureConversations !== false; // Default true
+  
   console.log('Auto-pop preference loaded:', autoInjectEnabled);
+  console.log('Conversation capture:', captureEnabled);
+  
+  // Start conversation scraper if enabled and on AI site
+  if (captureEnabled && isAISite) {
+    initializeConversationScraper();
+  }
 });
+
+/**
+ * Initialize conversation scraper
+ */
+function initializeConversationScraper() {
+  // Load scraper script
+  const script = document.createElement('script');
+  script.src = chrome.runtime.getURL('scripts/scraper.js');
+  script.onload = () => {
+    if (window.ConversationScraper) {
+      conversationScraper = new window.ConversationScraper();
+      conversationScraper.start();
+      console.log('💬 Conversation capture started');
+    }
+  };
+  (document.head || document.documentElement).appendChild(script);
+}
 
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -282,8 +309,27 @@ function injectGeneric(capsule) {
 
 /**
  * Format capsule context for injection
+ * Truncates if exceeds AI site input limits
  */
 function formatCapsuleContext(capsule) {
+  // AI site input limits (characters)
+  const LIMITS = {
+    'openai.com': 32000,      // ChatGPT (with GPT-4)
+    'claude.ai': 200000,       // Claude (very large)
+    'gemini.google.com': 30720, // Gemini Pro
+    'bing.com': 4000           // Bing Chat (conservative)
+  };
+  
+  // Get appropriate limit for current site
+  const hostname = window.location.hostname;
+  let maxLength = 8000; // Conservative default
+  for (const [site, limit] of Object.entries(LIMITS)) {
+    if (hostname.includes(site)) {
+      maxLength = limit;
+      break;
+    }
+  }
+  
   let context = `## 💊 Medicine Cabinet Context\n\n`;
   context += `**Project:** ${capsule.metadata.project}\n`;
   context += `**Summary:** ${capsule.metadata.summary || 'N/A'}\n`;
@@ -294,24 +340,43 @@ function formatCapsuleContext(capsule) {
   
   context += `**Created:** ${new Date(capsule.createdAt).toLocaleString()}\n\n`;
 
-  // Extract useful sections
+  // Extract useful sections with size tracking
+  let sectionsContext = '';
   if (capsule.sections) {
     for (const section of capsule.sections) {
       if (section.name === 'task_objective' && section.payload) {
-        context += `**Task Objective:**\n${section.payload}\n\n`;
+        sectionsContext += `**Task Objective:**\n${section.payload}\n\n`;
       } else if (section.name === 'relevant_files' && section.payload) {
         const files = Array.isArray(section.payload) ? section.payload : JSON.parse(section.payload);
         if (files.length > 0) {
-          context += `**Relevant Files:**\n`;
-          files.forEach(file => {
-            context += `- ${file}\n`;
+          sectionsContext += `**Relevant Files:**\n`;
+          // Limit to first 50 files
+          const filesToShow = files.slice(0, 50);
+          filesToShow.forEach(file => {
+            sectionsContext += `- ${file}\n`;
           });
-          context += '\n';
+          if (files.length > 50) {
+            sectionsContext += `... and ${files.length - 50} more files\n`;
+          }
+          sectionsContext += '\n';
         }
       } else if (section.name === 'working_plan' && section.payload) {
-        context += `**Working Plan:**\n${typeof section.payload === 'string' ? section.payload : JSON.stringify(section.payload, null, 2)}\n\n`;
+        sectionsContext += `**Working Plan:**\n${typeof section.payload === 'string' ? section.payload : JSON.stringify(section.payload, null, 2)}\n\n`;
       }
     }
+  }
+  
+  context += sectionsContext;
+  
+  // Check if we need to truncate
+  if (context.length > maxLength) {
+    const overhead = 150; // Space for truncation message
+    const truncateAt = maxLength - overhead;
+    context = context.substring(0, truncateAt);
+    context += `\n\n⚠️ *Context truncated (${context.length}/${maxLength} chars). Load smaller capsule or remove sections for full context.*`;
+    console.warn(`Context truncated: ${context.length} chars exceeded ${maxLength} limit`);
+  } else {
+    console.log(`Context size: ${context.length}/${maxLength} chars`);
   }
 
   return context;

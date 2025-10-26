@@ -2,9 +2,8 @@
  * Medicine Cabinet - Background Service Worker
  * Handles extension lifecycle, native messaging, and data storage
  * 
- * READ-ONLY MODE: This extension can only read and display .auractx and .auratab files.
- * It cannot create, modify, or write binary files to prevent corruption.
- * Use the Python CLI (medicine-cabinet) or IDE plugins for write operations.
+ * NATIVE MESSAGING: Connects to Python backend for bidirectional sync
+ * Browser can read files, Python backend handles writes
  */
 
 import { parse } from './parser.js';
@@ -17,11 +16,69 @@ let memoryStore = {
   sessions: [] // Track all loaded sessions with metadata
 };
 
+// Native messaging port
+let nativePort = null;
+
 // Initialize extension
 browser.runtime.onInstalled.addListener(() => {
   console.log('Medicine Cabinet extension installed');
   loadStoredMemory();
+  connectNativeHost();
 });
+
+/**
+ * Connect to native messaging host
+ */
+function connectNativeHost() {
+  try {
+    nativePort = browser.runtime.connectNative('com.medicinecabinet.host');
+    
+    nativePort.onMessage.addListener((message) => {
+      console.log('Received from native host:', message);
+      handleNativeMessage(message);
+    });
+    
+    nativePort.onDisconnect.addListener(() => {
+      console.log('Native host disconnected:', browser.runtime.lastError);
+      nativePort = null;
+      
+      // Try to reconnect after 5 seconds
+      setTimeout(connectNativeHost, 5000);
+    });
+    
+    console.log('✅ Connected to native messaging host');
+  } catch (error) {
+    console.warn('Native messaging host not available:', error);
+    // Extension will work in read-only mode without native host
+  }
+}
+
+/**
+ * Send message to native host
+ */
+function sendToNativeHost(message) {
+  if (nativePort) {
+    nativePort.postMessage(message);
+    return true;
+  } else {
+    console.warn('Native host not connected');
+    return false;
+  }
+}
+
+/**
+ * Handle messages from native host
+ */
+function handleNativeMessage(message) {
+  // Handle responses from Python backend
+  if (message.action === 'capsuleUpdated') {
+    // Reload the updated capsule
+    // TODO: Implement hot-reload
+    console.log('Capsule updated by native host');
+  } else if (message.action === 'tabletUpdated') {
+    console.log('Tablet updated by native host');
+  }
+}
 
 // Listen for messages from popup and content scripts
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -91,6 +148,11 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ error: error.message });
       });
       return true;
+
+    case 'captureConversation':
+      handleCaptureConversation(message.messages);
+      sendResponse({ success: true });
+      break;
 
     default:
       sendResponse({ error: 'Unknown action' });
@@ -361,6 +423,28 @@ async function handleClearAllMeds() {
       total: capsulesCount + tabletsCount
     }
   };
+}
+
+/**
+ * Handle conversation capture
+ */
+function handleCaptureConversation(messages) {
+  if (!messages || messages.length === 0) {
+    return;
+  }
+
+  console.log(`📝 Capturing ${messages.length} conversation messages`);
+
+  // Send to native host for persistence
+  if (nativePort) {
+    sendToNativeHost({
+      action: 'captureConversation',
+      messages: messages,
+      timestamp: new Date().toISOString()
+    });
+  } else {
+    console.warn('Native host not available, conversation not persisted');
+  }
 }
 
 /**

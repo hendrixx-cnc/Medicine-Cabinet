@@ -134,13 +134,36 @@ The Medicine Cabinet provides a universal, portable memory layer for AI assistan
     *   **[Sublime Text Plugin](sublime-extension/):** Python-based plugin with menu integration, keyboard shortcuts, and output panel for viewing loaded memory
     *   **VS Code Extension:** Coming soon - will integrate with GitHub Copilot and other AI assistants
 
-*   **Browser Extensions:**
-    *   **[Safari Extension](safari-extension/):** Manifest V3 extension for macOS Safari with native service workers
-    *   **[Chrome Extension](chrome-extension/):** Manifest V3 extension compatible with Chrome, Edge, Brave, Opera, Vivaldi, and Arc browsers
-    *   **[Firefox Extension](firefox-extension/):** Manifest V2 add-on for Firefox and Firefox-based browsers
-    *   **[Microsoft Edge Extension](edge-extension/):** Optimized for Bing Chat integration with specialized content injection
+### Browser Extensions
 
-All extensions support loading `.auractx` (Context Capsules) and `.auratab` (Memory Tablets) files, parsing the binary formats, and copying context to clipboard for AI prompts. They enable browser-based AI assistants to access project context on platforms like GitHub, ChatGPT, Claude, and documentation sites.
+Medicine Cabinet browser extensions provide automatic context injection and conversation capture:
+
+*   **[Safari Extension](safari-extension/):** Manifest V3 extension for macOS Safari  
+*   **[Chrome Extension](chrome-extension/):** Works with Chrome, Edge, Brave, Opera, Vivaldi, Arc
+*   **[Firefox Extension](firefox-extension/):** Manifest V2 add-on for Firefox
+*   **[Microsoft Edge Extension](edge-extension/):** Optimized for Bing Chat integration
+
+**Features:**
+- 💊 **Auto-Pop Context:** Automatically inject project context when visiting AI sites (ChatGPT, Claude, Gemini)
+- 💬 **Conversation Capture:** Scrape and persist conversations in real-time (requires native messaging)
+- 📖 **Read-Only Mode:** Browse extensions are read-only by default to prevent file corruption
+- 🔄 **Bidirectional Sync:** With native messaging setup, conversations are automatically saved to tablets
+
+**Setup Native Messaging (Optional but Recommended):**
+
+For conversation capture and persistent storage:
+
+```bash
+# Run the setup script
+python3 setup_extension.py
+
+# Follow prompts to enter your extension ID
+# Script will configure everything automatically
+```
+
+See [NATIVE_MESSAGING_SETUP.md](NATIVE_MESSAGING_SETUP.md) for detailed instructions.
+
+### IDE Extensions
 
 This ecosystem allows an AI's "memory" to follow the developer wherever they work, creating a seamless and truly context-aware experience.
 
