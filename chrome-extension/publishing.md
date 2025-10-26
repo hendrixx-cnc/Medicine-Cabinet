@@ -18,8 +18,8 @@ zip -r ../medicine-cabinet-chrome-v1.0.0.zip . \
   -x "*.git*" \
   -x "*.DS_Store" \
   -x "README.md" \
-  -x "QUICK_START.md" \
-  -x "PUBLISHING.md" \
+  -x "quick_start.md" \
+  -x "publishing.md" \
   -x "generate_icons.py" \
   -x "__pycache__/*"
 ```

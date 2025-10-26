@@ -160,7 +160,7 @@ python3 setup_extension.py
 # Script will configure everything automatically
 ```
 
-See [NATIVE_MESSAGING_SETUP.md](NATIVE_MESSAGING_SETUP.md) for detailed instructions.
+See [native_messaging_setup.md](native_messaging_setup.md) for detailed instructions.
 
 ### IDE Extensions
 

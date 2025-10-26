@@ -134,8 +134,8 @@ See README.md for detailed Xcode instructions.
 ## Support
 
 - 📖 Full docs: `safari-extension/README.md`
-- 🔧 Technical details: `safari-extension/DEVELOPMENT_SUMMARY.md`
-- 🎨 Icon help: `safari-extension/icons/ICON_CREATION_GUIDE.md`
+- 🔧 Technical details: `safari-extension/development_summary.md`
+- 🎨 Icon help: `safari-extension/icons/icon_creation_guide.md`
 - 🧪 Test page: `safari-extension/test.html`
 
 ## Links

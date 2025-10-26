@@ -13,7 +13,7 @@ safari-extension/
 ├── setup.sh                         # Quick setup script
 ├── test.html                        # Testing page
 ├── icons/
-│   ├── ICON_CREATION_GUIDE.md      # Guide for creating icons
+│   ├── icon_creation_guide.md      # Guide for creating icons
 │   └── (icon files - to be added)
 ├── popup/
 │   ├── popup.html                   # Extension popup interface
@@ -105,7 +105,7 @@ safari-extension/
    - Security & privacy info
    - Future enhancements
 
-2. **ICON_CREATION_GUIDE.md** - Icon creation instructions
+2. **icon_creation_guide.md** - Icon creation instructions
    - Multiple methods (online tools, design apps, CLI)
    - Code samples for automated generation
 
@@ -126,7 +126,7 @@ safari-extension/
 1. **Add Icons**
    - Create or download 16x16, 32x32, 48x48, 128x128 PNG files
    - Place in `icons/` directory
-   - See `icons/ICON_CREATION_GUIDE.md`
+   - See `icons/icon_creation_guide.md`
 
 2. **Load in Safari (Development)**
    ```
