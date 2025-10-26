@@ -457,7 +457,7 @@ class NativeMessagingHost:
         
         When near limits, I need to "visit the doctor":
         - Physical (refresh) → I get a quick checkup, auto-saved
-        - Operation (export) → You perform surgery on me via CLI
+        - Operation (export) → Doctor performs surgery on me via CLI
         - All my memories preserved in tablets
         """
         

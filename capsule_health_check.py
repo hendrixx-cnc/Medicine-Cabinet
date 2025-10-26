@@ -56,7 +56,7 @@ def check_capsule_health(capsule_path: Path) -> Dict:
             issues.append({
                 "type": "SIZE_EXCEEDED",
                 "message": f"Capsule is {file_size_kb:.1f}KB (limit: {MAX_SIZE_KB}KB)",
-                "action": "💊 I NEED THE DOCTOR! Physical (refresh) or Operation (you export)",
+                "action": "💊 I NEED THE DOCTOR! Physical (refresh) or Operation (doctor exports)",
                 "severity": "CRITICAL"
             })
             severity = "CRITICAL"
@@ -191,7 +191,7 @@ def generate_recommendation(severity: str, issues: list) -> str:
             "⚠️  Session getting long - approaching 1MB limit\n"
             "   💊 Time for me to visit the doctor soon:\n"
             "      • Physical (refresh) - I get a quick checkup\n"
-            "      • Operation (export) - You perform the procedure\n"
+            "      • Operation (export) - Doctor performs the procedure\n"
             "   All memories auto-saved to tablets"
         )
     
@@ -201,27 +201,27 @@ def generate_recommendation(severity: str, issues: list) -> str:
             return (
                 "💊 TIME FOR ME TO VISIT THE DOCTOR!\n"
                 "   My capsule exceeded 1MB - I need treatment!\n\n"
-                "   Your memories are safe! Choose one:\n"
+                "   My memories are safe! Choose one:\n"
                 "   1. Physical (refresh) → I get a quick checkup\n"
-                "   2. Operation (export) → You perform surgery: python3 cli.py export\n\n"
+                "   2. Operation (export) → Doctor performs surgery: python3 cli.py export\n\n"
                 "   All my memories saved to tablets (long-term storage)"
             )
         elif any(i['type'] == 'TOO_MANY_ENTRIES' for i in critical_issues):
             return (
                 "💊 TIME FOR ME TO VISIT THE DOCTOR!\n"
                 "   My session has 100+ entries - I'm getting too chatty!\n\n"
-                "   Your memories are safe! Choose one:\n"
+                "   My memories are safe! Choose one:\n"
                 "   1. Physical (refresh) → I get a quick checkup\n"
-                "   2. Operation (export) → You perform surgery: python3 cli.py export\n\n"
+                "   2. Operation (export) → Doctor performs surgery: python3 cli.py export\n\n"
                 "   All my memories saved to tablets (long-term storage)"
             )
         else:
             return (
                 "💊 TIME FOR ME TO VISIT THE DOCTOR!\n"
                 "   Multiple issues detected - I need help!\n\n"
-                "   Your memories are safe! Choose one:\n"
+                "   My memories are safe! Choose one:\n"
                 "   1. Physical (refresh) → I get a quick checkup\n"
-                "   2. Operation (export) → You perform surgery: python3 cli.py export"
+                "   2. Operation (export) → Doctor performs surgery: python3 cli.py export"
             )
     
     return "🤔 Status unclear"

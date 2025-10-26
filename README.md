@@ -123,7 +123,6 @@ The Medicine Cabinet is a foundational component for enabling more advanced AI c
 
 *   **[Orkestra](https://github.com/hendrixx-cnc/Orkestra)**: A multi-AI task coordination platform that allows a "Conductor" to orchestrate complex, autonomous workflows across different AI models like Claude, Grok, ChatGPT, Gemini, and Copilot.
 *   **[AURA](https://github.com/hendrixx-cnc/AURA)**: A hybrid AI-optimized compression library for chat and streaming applications. It uses a combination of template matching, multiple compression backends, and optional GPU acceleration to achieve high throughput and significant bandwidth savings, with a strong focus on enterprise-grade audit capabilities.
-*   [***The Quantum Self***](https://github.com/hendrixx-cnc/The-Quantum-Self): A self-published book by Todd Hendricks that contains the proof-of-concept for the Orkestra system, demonstrating its ability to create a complete NodeJS and React web application from start to finish. The repository contains the manuscript and associated code.
 
 ### Extensions & Integrations
 
