@@ -1,11 +1,28 @@
 /**
  * Medicine Cabinet - Content Script
  * Injects AI memory context into supported web pages
+ * AUTO-INJECT MODE: Automatically injects context when you visit AI sites
  */
 
 console.log('Medicine Cabinet content script loaded');
 
 let activeCapsule = null;
+let autoInjectEnabled = true;
+let hasAutoInjected = false;
+
+// Check if we should auto-inject on this site
+const hostname = window.location.hostname;
+const isAISite = hostname.includes('openai.com') || 
+                 hostname.includes('claude.ai') || 
+                 hostname.includes('gemini.google.com') ||
+                 hostname.includes('chat.google.com') ||
+                 hostname.includes('bing.com');
+
+// Load auto-inject preference from storage
+chrome.storage.local.get(['autoInjectEnabled'], (result) => {
+  autoInjectEnabled = result.autoInjectEnabled !== false; // Default true
+  console.log('Auto-inject preference loaded:', autoInjectEnabled);
+});
 
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -15,16 +32,104 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'activeCapsuleChanged':
       activeCapsule = message.capsule;
       console.log('Active capsule updated:', activeCapsule);
+      // Auto-inject when capsule changes
+      if (autoInjectEnabled && isAISite && !hasAutoInjected) {
+        setTimeout(() => autoInject(), 1000);
+      }
       break;
 
     case 'injectCapsuleContext':
       injectContext(message.capsule);
       sendResponse({ success: true });
       break;
+
+    case 'toggleAutoInject':
+      autoInjectEnabled = message.enabled;
+      console.log('Auto-inject:', autoInjectEnabled ? 'enabled' : 'disabled');
+      sendResponse({ success: true });
+      break;
   }
 
   return false;
 });
+
+// Request active capsule from background when page loads
+chrome.runtime.sendMessage({ action: 'getActiveCapsule' }, (response) => {
+  if (response && response.capsule) {
+    activeCapsule = response.capsule;
+    console.log('Retrieved active capsule:', activeCapsule.metadata.project);
+    
+    // Auto-inject if on AI site and have capsule
+    if (autoInjectEnabled && isAISite && activeCapsule) {
+      setTimeout(() => autoInject(), 2000); // Wait for page to load
+    }
+  }
+});
+
+/**
+ * Auto-inject context when page is ready
+ */
+function autoInject() {
+  if (!activeCapsule || hasAutoInjected) {
+    return;
+  }
+
+  console.log('Auto-injecting context...');
+  
+  // Wait for input field to be available
+  waitForElement(getInputSelector(), (element) => {
+    if (element && !hasAutoInjected) {
+      hasAutoInjected = true;
+      injectContext(activeCapsule);
+    }
+  });
+}
+
+/**
+ * Get the appropriate input selector for current site
+ */
+function getInputSelector() {
+  if (hostname.includes('openai.com')) {
+    return 'textarea[data-id], textarea#prompt-textarea, div[contenteditable="true"]';
+  } else if (hostname.includes('claude.ai')) {
+    return 'div[contenteditable="true"], textarea';
+  } else if (hostname.includes('gemini.google.com') || hostname.includes('chat.google.com')) {
+    return 'textarea, div[contenteditable="true"]';
+  } else if (hostname.includes('bing.com')) {
+    return 'textarea.searchbox, textarea[aria-label*="Ask"], div[contenteditable="true"]';
+  }
+  return 'textarea, div[contenteditable="true"]';
+}
+
+/**
+ * Wait for element to appear in DOM
+ */
+function waitForElement(selector, callback, timeout = 10000) {
+  const element = document.querySelector(selector);
+  if (element) {
+    callback(element);
+    return;
+  }
+
+  const observer = new MutationObserver((mutations, obs) => {
+    const element = document.querySelector(selector);
+    if (element) {
+      obs.disconnect();
+      callback(element);
+    }
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
+  // Timeout after specified time
+  setTimeout(() => {
+    observer.disconnect();
+    console.log('Timeout waiting for input element');
+  }, timeout);
+}
 
 /**
  * Inject capsule context into the page
@@ -40,9 +145,7 @@ function injectContext(capsule) {
   // Detect the site and use appropriate injection method
   const hostname = window.location.hostname;
 
-  if (hostname.includes('bing.com')) {
-    injectBing(capsule);
-  } else if (hostname.includes('github.com')) {
+  if (hostname.includes('github.com')) {
     injectGitHub(capsule);
   } else if (hostname.includes('stackoverflow.com')) {
     injectStackOverflow(capsule);

@@ -25,6 +25,9 @@ function setupEventListeners() {
     button.addEventListener('click', () => switchTab(button.dataset.tab));
   });
 
+  // Auto-inject toggle
+  document.getElementById('auto-inject-toggle').addEventListener('change', handleAutoInjectToggle);
+
   // Action buttons
   document.getElementById('inject-context-btn').addEventListener('click', injectContext);
   document.getElementById('refresh-btn').addEventListener('click', loadMemoryData);
@@ -41,6 +44,12 @@ function setupEventListeners() {
   document.getElementById('help-link').addEventListener('click', (e) => {
     e.preventDefault();
     showHelp();
+  });
+
+  // Load auto-inject preference
+  chrome.storage.local.get(['autoInjectEnabled'], (result) => {
+    const enabled = result.autoInjectEnabled !== false; // Default true
+    document.getElementById('auto-inject-toggle').checked = enabled;
   });
 }
 
@@ -409,6 +418,34 @@ async function injectContext() {
     console.error('Error injecting context:', error);
     showNotification('✗ Error injecting context', 'error');
   }
+}
+
+/**
+ * Handle auto-inject toggle
+ */
+async function handleAutoInjectToggle(event) {
+  const enabled = event.target.checked;
+  
+  // Save preference
+  await chrome.storage.local.set({ autoInjectEnabled: enabled });
+  
+  // Notify all tabs
+  const tabs = await chrome.tabs.query({});
+  for (const tab of tabs) {
+    try {
+      await chrome.tabs.sendMessage(tab.id, {
+        action: 'toggleAutoInject',
+        enabled
+      });
+    } catch (error) {
+      // Tab may not have content script loaded, ignore
+    }
+  }
+  
+  showNotification(
+    enabled ? '✓ Auto-inject enabled' : '✓ Auto-inject disabled',
+    'success'
+  );
 }
 
 /**

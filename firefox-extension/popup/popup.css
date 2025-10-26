@@ -254,8 +254,36 @@ h1 {
 
 .actions {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   margin-bottom: 12px;
+}
+
+.auto-inject-toggle {
+  padding: 8px 12px;
+  background: var(--surface);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.toggle-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.toggle-text {
+  flex: 1;
 }
 
 .action-btn {

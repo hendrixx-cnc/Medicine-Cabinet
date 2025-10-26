@@ -41,7 +41,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
 
     case 'getActiveCapsule':
-      sendResponse({ capsule: memoryStore.activeCapsule });
+      const activeCapsule = memoryStore.capsules.find(c => c.id === memoryStore.activeCapsule);
+      sendResponse({ capsule: activeCapsule || null });
       break;
 
     case 'setActiveCapsule':
