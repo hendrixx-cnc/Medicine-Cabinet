@@ -1,0 +1,47 @@
+Medicine Cabinet Plugin for Sublime Text
+========================================
+
+Thank you for installing Medicine Cabinet!
+
+This plugin provides AI memory management with support for:
+- Context Capsules (.auractx files)
+- Memory Tablets (.auratab files)
+
+Quick Start
+-----------
+
+1. Load a file:
+   - Tools > Medicine Cabinet > Load Context Capsule
+   - Or: Ctrl+Shift+M, Ctrl+Shift+C
+
+2. View loaded memory:
+   - Tools > Medicine Cabinet > Show Medicine Cabinet Panel
+   - Or: Ctrl+Shift+M, Ctrl+Shift+P
+
+3. Copy to clipboard:
+   - Tools > Medicine Cabinet > Copy Context to Clipboard
+   - Or: Ctrl+Shift+M, Ctrl+Shift+X
+
+Keyboard Shortcuts
+------------------
+
+Ctrl+Shift+M, Ctrl+Shift+C  - Load Context Capsule
+Ctrl+Shift+M, Ctrl+Shift+T  - Load Memory Tablet
+Ctrl+Shift+M, Ctrl+Shift+P  - Show Panel
+Ctrl+Shift+M, Ctrl+Shift+X  - Copy Context
+
+Context Menu
+------------
+
+Right-click on .auractx or .auratab files to:
+- Load as Context Capsule
+- Load as Memory Tablet
+- Copy Context
+
+Documentation
+-------------
+
+Full documentation: https://github.com/hendrixx-cnc/Medicine-Cabinet
+Issues: https://github.com/hendrixx-cnc/Medicine-Cabinet/issues
+
+Enjoy using Medicine Cabinet!

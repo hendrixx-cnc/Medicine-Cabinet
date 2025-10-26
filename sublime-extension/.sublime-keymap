@@ -1,0 +1,18 @@
+[
+    {
+        "keys": ["ctrl+shift+m", "ctrl+shift+c"],
+        "command": "load_capsule"
+    },
+    {
+        "keys": ["ctrl+shift+m", "ctrl+shift+t"],
+        "command": "load_tablet"
+    },
+    {
+        "keys": ["ctrl+shift+m", "ctrl+shift+p"],
+        "command": "show_medicine_cabinet_panel"
+    },
+    {
+        "keys": ["ctrl+shift+m", "ctrl+shift+x"],
+        "command": "copy_medicine_cabinet_context"
+    }
+]

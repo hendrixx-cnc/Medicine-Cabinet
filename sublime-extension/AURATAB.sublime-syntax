@@ -1,0 +1,21 @@
+%YAML 1.2
+---
+name: Memory Tablet
+file_extensions:
+  - auratab
+scope: source.auratab
+
+contexts:
+  main:
+    - match: ''
+      push: binary_content
+
+  binary_content:
+    - meta_scope: markup.raw.binary.auratab
+    - match: (?=AURATAB1)
+      set: header
+
+  header:
+    - meta_scope: entity.name.type.auratab
+    - match: AURATAB1
+      scope: keyword.control.auratab

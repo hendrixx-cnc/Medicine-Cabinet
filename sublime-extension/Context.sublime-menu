@@ -1,0 +1,20 @@
+[
+    {
+        "caption": "Medicine Cabinet",
+        "id": "medicine-cabinet-context",
+        "children": [
+            {
+                "caption": "Load as Context Capsule",
+                "command": "load_capsule_from_context"
+            },
+            {
+                "caption": "Load as Memory Tablet",
+                "command": "load_tablet_from_context"
+            },
+            {
+                "caption": "Copy Context",
+                "command": "copy_medicine_cabinet_context"
+            }
+        ]
+    }
+]

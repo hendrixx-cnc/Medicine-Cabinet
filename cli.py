@@ -10,6 +10,8 @@ Usage:
     medicine-cabinet tablet create <title> <description> [options]
     medicine-cabinet tablet read <file>
     medicine-cabinet tablet add-entry <file> <path> [options]
+    medicine-cabinet sessions [--dir <path>]
+    medicine-cabinet view <file>
     medicine-cabinet inspect <file>
 """
 
@@ -165,6 +167,162 @@ def cmd_inspect(args):
     inspector_main()
 
 
+def cmd_sessions_list(args):
+    """List all session files in a directory."""
+    sessions_dir = Path(args.dir)
+    
+    if not sessions_dir.exists():
+        print(f"Directory not found: {sessions_dir}")
+        sys.exit(1)
+    
+    # Find all session files
+    tablets = list(sessions_dir.glob("*.auratab"))
+    capsules = list(sessions_dir.glob("*.auractx"))
+    
+    if not tablets and not capsules:
+        print(f"No session files found in {sessions_dir}")
+        return
+    
+    print("=" * 80)
+    print(f"Sessions in {sessions_dir}")
+    print("=" * 80)
+    
+    # List tablets
+    if tablets:
+        print(f"\nTablets ({len(tablets)}):")
+        print("-" * 80)
+        for tablet_path in sorted(tablets):
+            try:
+                tablet = load_tablet(str(tablet_path))
+                print(f"\n  📄 {tablet_path.name}")
+                print(f"     Title: {tablet.metadata.title}")
+                print(f"     Entries: {len(tablet.entries)}")
+                print(f"     Created: {tablet.created_at.strftime('%Y-%m-%d %H:%M:%S')}")
+            except Exception as e:
+                print(f"\n  ⚠️  {tablet_path.name} (error: {e})")
+    
+    # List capsules
+    if capsules:
+        print(f"\nCapsules ({len(capsules)}):")
+        print("-" * 80)
+        for capsule_path in sorted(capsules):
+            try:
+                capsule = load_capsule(str(capsule_path))
+                print(f"\n  📦 {capsule_path.name}")
+                print(f"     Project: {capsule.metadata.project}")
+                print(f"     Sections: {len(capsule.sections)}")
+                print(f"     Created: {capsule.metadata.created_at.strftime('%Y-%m-%d %H:%M:%S')}")
+            except Exception as e:
+                print(f"\n  ⚠️  {capsule_path.name} (error: {e})")
+    
+    print("\n" + "=" * 80)
+
+
+def cmd_view_file(args):
+    """View detailed contents of a session file."""
+    filepath = Path(args.file)
+    
+    if not filepath.exists():
+        print(f"File not found: {filepath}")
+        sys.exit(1)
+    
+    if filepath.suffix == ".auratab":
+        _view_tablet_detailed(filepath)
+    elif filepath.suffix == ".auractx":
+        _view_capsule_detailed(filepath)
+    else:
+        print(f"Unknown file type: {filepath.suffix}")
+        print("Expected .auratab or .auractx file")
+        sys.exit(1)
+
+
+def _view_tablet_detailed(filepath: Path):
+    """Pretty-print tablet file contents."""
+    tablet = load_tablet(str(filepath))
+    
+    print("=" * 80)
+    print(f"TABLET: {filepath.name}")
+    print("=" * 80)
+    print(f"\nTitle:       {tablet.metadata.title}")
+    print(f"Description: {tablet.metadata.description}")
+    print(f"Author:      {tablet.metadata.author or 'N/A'}")
+    print(f"Created:     {tablet.created_at.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+    
+    if tablet.metadata.tags:
+        print(f"Tags:        {', '.join(tablet.metadata.tags)}")
+    
+    print(f"\nTotal Entries: {len(tablet.entries)}")
+    print("-" * 80)
+    
+    for i, entry in enumerate(tablet.entries, 1):
+        print(f"\n[Entry {i}] {entry.path}")
+        
+        if entry.notes:
+            print(f"\n  Notes:")
+            notes_lines = entry.notes.split('\n')
+            for line in notes_lines[:10]:
+                print(f"    {line}")
+            if len(notes_lines) > 10:
+                print(f"    ... ({len(notes_lines) - 10} more lines)")
+        
+        if entry.diff:
+            print(f"\n  Diff ({len(entry.diff)} characters):")
+            diff_lines = entry.diff.split('\n')
+            for line in diff_lines[:15]:
+                print(f"    {line}")
+            if len(diff_lines) > 15:
+                print(f"    ... ({len(diff_lines) - 15} more lines)")
+    
+    print("\n" + "=" * 80)
+
+
+def _view_capsule_detailed(filepath: Path):
+    """Pretty-print capsule file contents."""
+    capsule = load_capsule(str(filepath))
+    
+    print("=" * 80)
+    print(f"CAPSULE: {filepath.name}")
+    print("=" * 80)
+    print(f"\nProject:     {capsule.metadata.project}")
+    print(f"Summary:     {capsule.metadata.summary}")
+    print(f"Author:      {capsule.metadata.author or 'N/A'}")
+    print(f"Created:     {capsule.metadata.created_at.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+    print(f"Branch:      {capsule.metadata.branch or 'N/A'}")
+    
+    if capsule.get_task_objective():
+        print(f"\nTask:        {capsule.get_task_objective()}")
+    
+    if capsule.get_relevant_files():
+        print(f"\nRelevant Files ({len(capsule.get_relevant_files())}):")
+        for f in capsule.get_relevant_files()[:5]:
+            print(f"  - {f}")
+        if len(capsule.get_relevant_files()) > 5:
+            print(f"  ... and {len(capsule.get_relevant_files()) - 5} more")
+    
+    print(f"\nTotal Sections: {len(capsule.sections)}")
+    print("-" * 80)
+    
+    for i, section in enumerate(capsule.sections, 1):
+        print(f"\n[Section {i}] {section.name} ({section.kind.name})")
+        
+        if section.kind.name == "BINARY":
+            print(f"  Binary data: {len(section.payload)} bytes")
+        else:
+            # TEXT or JSON
+            try:
+                content = section.payload.decode('utf-8')
+                lines = content.split('\n')
+                print(f"  Content ({len(content)} characters):")
+                for line in lines[:10]:
+                    print(f"    {line}")
+                if len(lines) > 10:
+                    print(f"    ... ({len(lines) - 10} more lines)")
+            except:
+                print(f"  Data: {len(section.payload)} bytes")
+    
+    print("\n" + "=" * 80)
+
+
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -235,6 +393,16 @@ def main():
     inspect_parser = subparsers.add_parser("inspect", help="Inspect any file")
     inspect_parser.add_argument("file", help="File to inspect")
     inspect_parser.set_defaults(func=cmd_inspect)
+    
+    # Sessions command
+    sessions_parser = subparsers.add_parser("sessions", help="List all saved sessions")
+    sessions_parser.add_argument("--dir", default="./sessions", help="Sessions directory (default: ./sessions)")
+    sessions_parser.set_defaults(func=cmd_sessions_list)
+    
+    # View command
+    view_parser = subparsers.add_parser("view", help="View session file details")
+    view_parser.add_argument("file", help="Session file path (.auratab or .auractx)")
+    view_parser.set_defaults(func=cmd_view_file)
     
     args = parser.parse_args()
     

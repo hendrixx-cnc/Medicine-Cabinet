@@ -71,6 +71,41 @@ tablet.add_entry(TabletEntry(
 tablet.write("auth_fix.auratab")
 ```
 
+### Session Tracking
+
+Medicine Cabinet includes automatic and manual session tracking tools:
+
+**Automatic Tracking (Zero Configuration):**
+```python
+# Import once and it automatically tracks throughout your session
+from auto_session_tracker import track
+
+# Track changes anywhere in your code
+track("file.py", "Added new feature", "+10 lines")
+track("main.py", "Fixed bug", "+2, -1 lines")
+
+# Session auto-saves when script ends - no manual save needed!
+```
+
+**Manual Session Tracking:**
+```python
+from session_tracker import AURASessionTracker
+
+tracker = AURASessionTracker()
+tablet = tracker.start_session("Feature Implementation", "Added user auth")
+tracker.record_file_change(tablet, "auth.py", "+def login()...", "Added login")
+tracker.save_session(tablet)
+```
+
+**View Sessions:**
+```bash
+# View all sessions
+python3 view_session.py
+
+# View specific session
+python3 view_session.py sessions/session_20251026_204406.auratab
+```
+
 ### Inspect Files
 
 ```bash
@@ -90,16 +125,22 @@ The Medicine Cabinet is a foundational component for enabling more advanced AI c
 *   **[AURA](https://github.com/hendrixx-cnc/AURA)**: A hybrid AI-optimized compression library for chat and streaming applications. It uses a combination of template matching, multiple compression backends, and optional GPU acceleration to achieve high throughput and significant bandwidth savings, with a strong focus on enterprise-grade audit capabilities.
 *   [***The Quantum Self***](https://github.com/hendrixx-cnc/The-Quantum-Self): A self-published book by Todd Hendricks that contains the proof-of-concept for the Orkestra system, demonstrating its ability to create a complete NodeJS and React web application from start to finish. The repository contains the manuscript and associated code.
 
-### Future Vision: A Universal Memory Layer
+### Extensions & Integrations
 
-The goal for the Medicine Cabinet is to become a universal, portable memory layer for AI assistants, accessible across all development tools. Future plans include:
+The Medicine Cabinet provides a universal, portable memory layer for AI assistants, accessible across all development tools:
 
-*   **Free IDE Extensions:**
-    *   **VS Code:** An extension that allows the AI assistant within VS Code to read and write Capsules and Tablets, maintaining context between sessions.
-    *   **Other IDEs:** Similar extensions for JetBrains IDEs (PyCharm, WebStorm), Sublime Text, and others.
+*   **IDE Extensions:**
+    *   **[JetBrains Plugin](jetbrains-plugin/):** Native support for all JetBrains IDEs (IntelliJ IDEA, PyCharm, WebStorm, PhpStorm, GoLand, Rider, CLion, RubyMine, etc.) - Load capsules and tablets directly in the IDE with dedicated tool windows
+    *   **[Sublime Text Plugin](sublime-extension/):** Python-based plugin with menu integration, keyboard shortcuts, and output panel for viewing loaded memory
+    *   **VS Code Extension:** Coming soon - will integrate with GitHub Copilot and other AI assistants
+
 *   **Browser Extensions:**
-    *   Extensions for Chrome, Safari, and Firefox that enable a browser-based AI to access project context from local Medicine Cabinet files, allowing for intelligent assistance on platforms like GitHub, Stack Overflow, and documentation sites.
-*   **Native Helper Application:** A lightweight, secure background service that will act as the bridge between the browser/IDE extensions and the local file system, ensuring safe and efficient access to the memory files.
+    *   **[Safari Extension](safari-extension/):** Manifest V3 extension for macOS Safari with native service workers
+    *   **[Chrome Extension](chrome-extension/):** Manifest V3 extension compatible with Chrome, Edge, Brave, Opera, Vivaldi, and Arc browsers
+    *   **[Firefox Extension](firefox-extension/):** Manifest V2 add-on for Firefox and Firefox-based browsers
+    *   **[Microsoft Edge Extension](edge-extension/):** Optimized for Bing Chat integration with specialized content injection
 
-This ecosystem will allow an AI's "memory" to follow the developer wherever they work, creating a seamless and truly context-aware experience.
+All extensions support loading `.auractx` (Context Capsules) and `.auratab` (Memory Tablets) files, parsing the binary formats, and copying context to clipboard for AI prompts. They enable browser-based AI assistants to access project context on platforms like GitHub, ChatGPT, Claude, and documentation sites.
+
+This ecosystem allows an AI's "memory" to follow the developer wherever they work, creating a seamless and truly context-aware experience.
 

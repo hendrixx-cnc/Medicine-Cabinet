@@ -1,0 +1,31 @@
+[
+    {
+        "caption": "Tools",
+        "mnemonic": "T",
+        "id": "tools",
+        "children": [
+            {
+                "caption": "Medicine Cabinet",
+                "id": "medicine-cabinet",
+                "children": [
+                    {
+                        "caption": "Load Context Capsule (.auractx)",
+                        "command": "load_capsule"
+                    },
+                    {
+                        "caption": "Load Memory Tablet (.auratab)",
+                        "command": "load_tablet"
+                    },
+                    {
+                        "caption": "Show Medicine Cabinet Panel",
+                        "command": "show_medicine_cabinet_panel"
+                    },
+                    {
+                        "caption": "Copy Context to Clipboard",
+                        "command": "copy_medicine_cabinet_context"
+                    }
+                ]
+            }
+        ]
+    }
+]

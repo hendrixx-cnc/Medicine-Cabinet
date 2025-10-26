@@ -1,0 +1,21 @@
+%YAML 1.2
+---
+name: Context Capsule
+file_extensions:
+  - auractx
+scope: source.auractx
+
+contexts:
+  main:
+    - match: ''
+      push: binary_content
+
+  binary_content:
+    - meta_scope: markup.raw.binary.auractx
+    - match: (?=AURACTX1)
+      set: header
+
+  header:
+    - meta_scope: entity.name.type.auractx
+    - match: AURACTX1
+      scope: keyword.control.auractx

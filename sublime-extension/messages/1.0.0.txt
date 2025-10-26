@@ -1,0 +1,37 @@
+Medicine Cabinet 1.0.0
+======================
+
+Initial Release! 🎉
+
+Features
+--------
+
+✓ Load Context Capsules (.auractx)
+✓ Load Memory Tablets (.auratab)
+✓ Binary format parser (AURACTX1 & AURATAB1)
+✓ Visual output panel
+✓ Copy context to clipboard
+✓ Syntax highlighting
+✓ Keyboard shortcuts
+✓ Context menu integration
+✓ Multiple file support
+
+What's New
+----------
+
+This is the first release of Medicine Cabinet for Sublime Text!
+
+The plugin brings AI memory management directly into your editor,
+allowing you to load, view, and copy context capsules and memory
+tablets for use with AI assistants.
+
+Binary formats supported:
+- AURACTX1: Context Capsules with sections (TEXT/JSON/BINARY)
+- AURATAB1: Memory Tablets with entries (path/diff/notes)
+
+Get Started
+-----------
+
+Press Ctrl+Shift+M, Ctrl+Shift+C to load your first capsule!
+
+Documentation: https://github.com/hendrixx-cnc/Medicine-Cabinet
